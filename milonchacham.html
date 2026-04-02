@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>מילון חכם</title>
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@300;400;500;700;900&family=Heebo:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --ink:#1a1208; --parchment:#f5f0e8; --warm:#f0e6d0; --gold:#c8952a; --rust:#9b3a1a; --sage:#4a6741; --shadow:rgba(26,18,8,0.12); }
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { background:var(--parchment); color:var(--ink); font-family:'Heebo',sans-serif; min-height:100vh; background-image:radial-gradient(ellipse at 20% 0%,rgba(200,149,42,0.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(155,58,26,0.06) 0%,transparent 60%); }
+  header { padding:2.5rem 2rem 1.5rem; text-align:center; border-bottom:1px solid rgba(200,149,42,0.25); }
+  header::after { content:''; display:block; width:60px; height:2px; background:var(--gold); margin:1rem auto 0; }
+  h1 { font-family:'Frank Ruhl Libre',serif; font-weight:900; font-size:clamp(2rem,5vw,3rem); letter-spacing:-0.02em; }
+  .subtitle { font-size:0.85rem; color:#7a6a50; margin-top:0.4rem; font-weight:300; direction:ltr; letter-spacing:0.06em; text-transform:uppercase; }
+  main { max-width:780px; margin:0 auto; padding:2rem 1.5rem 4rem; }
+
+  .server-banner { display:none; padding:0.7rem 1rem; border-radius:10px; font-size:0.82rem; margin-bottom:1.25rem; direction:ltr; text-align:left; line-height:1.6; }
+  .server-banner.ok { background:#edfaed; border:1px solid #7dbd7d; color:#2a6a2a; display:block; }
+  .server-banner.err { background:#fff8ed; border:1px solid #e8b84b; color:#7a4a00; display:block; }
+
+  .nav-tabs { display:flex; margin-bottom:1.5rem; background:white; border-radius:14px; padding:5px; box-shadow:0 2px 16px var(--shadow),0 0 0 1px rgba(200,149,42,0.1); }
+  .nav-tab { flex:1; padding:0.65rem 0.4rem; border:none; background:transparent; border-radius:10px; font-family:'Frank Ruhl Libre',serif; font-size:0.88rem; font-weight:500; color:#9a8860; cursor:pointer; transition:background 0.2s,color 0.2s; display:flex; align-items:center; justify-content:center; gap:0.3rem; }
+  .nav-tab.active { background:var(--gold); color:white; font-weight:700; }
+  .nav-tab:not(.active):hover { background:var(--warm); color:var(--ink); }
+  .badge { background:var(--gold); color:white; font-size:0.68rem; padding:1px 6px; border-radius:10px; font-weight:700; }
+  .nav-tab.active .badge { background:rgba(255,255,255,0.3); }
+
+  .page { display:none; }
+  .page.active { display:block; }
+
+  .source-tabs { display:flex; margin-bottom:1.5rem; background:white; border-radius:14px; padding:5px; box-shadow:0 2px 16px var(--shadow),0 0 0 1px rgba(200,149,42,0.1); }
+  .source-tab { flex:1; padding:0.65rem 1rem; border:none; background:transparent; border-radius:10px; font-family:'Frank Ruhl Libre',serif; font-size:1rem; font-weight:500; color:#9a8860; cursor:pointer; transition:background 0.2s,color 0.2s; display:flex; align-items:center; justify-content:center; gap:0.4rem; }
+  .source-tab.active { background:var(--gold); color:white; font-weight:700; }
+  .source-tab:not(.active):hover { background:var(--warm); color:var(--ink); }
+
+  .input-section { background:white; border-radius:16px; padding:1.75rem; box-shadow:0 2px 20px var(--shadow),0 0 0 1px rgba(200,149,42,0.1); margin-bottom:2rem; }
+  .tab-panel { display:none; }
+  .tab-panel.active { display:block; }
+  .input-label { font-family:'Frank Ruhl Libre',serif; font-size:1.05rem; font-weight:500; margin-bottom:0.75rem; display:block; }
+  .url-row { display:flex; gap:0.75rem; flex-wrap:wrap; }
+  input[type="url"],input[type="text"] { flex:1; min-width:200px; padding:0.75rem 1rem; border:1.5px solid rgba(200,149,42,0.3); border-radius:10px; font-size:0.9rem; font-family:'Heebo',sans-serif; background:var(--warm); color:var(--ink); direction:ltr; outline:none; transition:border-color 0.2s,background 0.2s; }
+  input:focus { border-color:var(--gold); background:white; }
+  input::placeholder { color:#b0a080; }
+  .analyze-btn { padding:0.75rem 1.5rem; background:var(--gold); color:white; border:none; border-radius:10px; font-family:'Frank Ruhl Libre',serif; font-size:1rem; font-weight:700; cursor:pointer; transition:background 0.2s,transform 0.1s; white-space:nowrap; }
+  .analyze-btn:hover { background:#b07d1e; }
+  .analyze-btn:active { transform:scale(0.98); }
+  .analyze-btn:disabled { background:#c8b88a; cursor:not-allowed; }
+  .hint { margin-top:0.85rem; font-size:0.78rem; color:#7a6a50; direction:ltr; text-align:left; line-height:1.7; padding:0.65rem 0.9rem; background:var(--warm); border-radius:8px; }
+  .hint code { background:rgba(0,0,0,0.07); border-radius:4px; padding:1px 5px; font-size:0.85em; font-family:monospace; }
+
+  .yt-preview { display:none; margin-top:1rem; padding:0.85rem 1rem; background:var(--warm); border-radius:10px; border:1px solid rgba(200,149,42,0.25); align-items:center; gap:0.75rem; }
+  .yt-preview.visible { display:flex; }
+  .yt-thumb { width:80px; height:45px; border-radius:6px; object-fit:cover; flex-shrink:0; background:#ddd; }
+  .yt-id { font-size:0.88rem; font-weight:600; direction:ltr; }
+  .yt-sub { font-size:0.75rem; color:#9a8860; direction:ltr; margin-top:2px; }
+
+  .loading { display:none; text-align:center; padding:3rem 1rem; }
+  .loading.active { display:block; }
+  .loader-dots { display:inline-flex; gap:8px; margin-bottom:1rem; }
+  .loader-dots span { width:10px; height:10px; background:var(--gold); border-radius:50%; animation:bounce 1.2s infinite ease-in-out; }
+  .loader-dots span:nth-child(2){animation-delay:0.2s} .loader-dots span:nth-child(3){animation-delay:0.4s}
+  @keyframes bounce { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
+  .loading-text { font-family:'Frank Ruhl Libre',serif; font-size:1.05rem; color:#7a6a50; }
+  .loading-sub { font-size:0.8rem; color:#b0a080; margin-top:0.4rem; }
+
+  .error-box { display:none; background:#fff5f3; border:1.5px solid #e0a090; border-radius:12px; padding:1.2rem 1.5rem; color:var(--rust); font-size:0.9rem; margin-bottom:1.5rem; line-height:1.7; }
+  .error-box.active { display:block; }
+
+  .results-header { display:none; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem; }
+  .results-header.active { display:flex; }
+  .results-title { font-family:'Frank Ruhl Libre',serif; font-size:1.4rem; font-weight:700; }
+  .source-label { font-size:0.78rem; color:#9a8860; direction:ltr; width:100%; }
+
+  .selection-bar { display:none; align-items:center; gap:0.75rem; padding:0.75rem 1rem; background:white; border-radius:12px; box-shadow:0 2px 12px var(--shadow); margin-bottom:1rem; flex-wrap:wrap; }
+  .selection-bar.active { display:flex; }
+  .selection-hint { font-size:0.85rem; color:#7a6a50; flex:1; }
+  .selection-count { font-size:0.85rem; font-weight:600; color:var(--gold); }
+  .save-selected-btn { padding:0.5rem 1.2rem; background:var(--sage); color:white; border:none; border-radius:20px; font-family:'Frank Ruhl Libre',serif; font-size:0.9rem; font-weight:700; cursor:pointer; transition:background 0.2s; white-space:nowrap; }
+  .save-selected-btn:hover { background:#3a5732; }
+  .save-selected-btn:disabled { background:#aaa; cursor:not-allowed; }
+
+  .word-cards { display:grid; gap:1rem; }
+  .word-card { background:white; border-radius:14px; padding:1.25rem 1.5rem; box-shadow:0 2px 12px var(--shadow); border-right:4px solid var(--gold); animation:fadeUp 0.4s ease both; transition:box-shadow 0.2s; position:relative; }
+  .word-card.selected { border-right-color:var(--sage) !important; box-shadow:0 0 0 2px var(--sage),0 4px 16px var(--shadow); }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+  .word-card:nth-child(3n+1){border-color:var(--gold)} .word-card:nth-child(3n+2){border-color:var(--rust)} .word-card:nth-child(3n){border-color:var(--sage)}
+  .word-card:nth-child(1){animation-delay:.04s} .word-card:nth-child(2){animation-delay:.08s} .word-card:nth-child(3){animation-delay:.12s} .word-card:nth-child(4){animation-delay:.16s} .word-card:nth-child(5){animation-delay:.20s}
+  .card-checkbox { position:absolute; top:1.1rem; left:1rem; width:18px; height:18px; accent-color:var(--sage); cursor:pointer; }
+  .sentence { background:var(--warm); border-radius:8px; padding:0.7rem 1rem; font-size:1rem; line-height:1.6; margin-bottom:0.5rem; }
+  .sentence:last-child { margin-bottom:0; }
+  .sentence-translation { font-size:0.8rem; color:#7a6a50; font-style:italic; direction:ltr; margin-top:0.3rem; }
+  .highlight { background:rgba(200,149,42,0.22); border-radius:3px; padding:0 2px; font-weight:700; }
+
+  .empty-state { text-align:center; padding:3rem 1rem; color:#b0a080; }
+  .empty-icon { font-size:3rem; margin-bottom:1rem; opacity:0.5; }
+  .empty-state p { font-family:'Frank Ruhl Libre',serif; font-size:1.1rem; }
+
+  /* BANK & LEARNED */
+  .wb-toolbar { display:flex; gap:0.75rem; margin-bottom:1.5rem; flex-wrap:wrap; align-items:center; }
+  .wb-search { flex:1; min-width:180px; padding:0.7rem 1rem; border:1.5px solid rgba(200,149,42,0.3); border-radius:10px; font-size:0.95rem; font-family:'Heebo',sans-serif; background:white; color:var(--ink); direction:rtl; outline:none; transition:border-color 0.2s; }
+  .wb-search:focus { border-color:var(--gold); }
+  .wb-search::placeholder { color:#b0a080; }
+  .wb-count { font-size:0.82rem; color:#9a8860; white-space:nowrap; }
+  .wb-card { background:white; border-radius:14px; padding:1.1rem 1.25rem 1.1rem 1.25rem; box-shadow:0 2px 10px var(--shadow); border-right:4px solid var(--sage); margin-bottom:0.85rem; position:relative; padding-top:2.8rem; }
+  .wb-card:nth-child(3n+1){border-color:var(--gold)} .wb-card:nth-child(3n+2){border-color:var(--rust)} .wb-card:nth-child(3n){border-color:var(--sage)}
+  .wb-actions { position:absolute; top:0.75rem; left:0.75rem; display:flex; gap:0.4rem; }
+  .btn-learned { background:var(--sage); color:white; border:none; border-radius:6px; font-size:0.7rem; padding:3px 8px; cursor:pointer; font-family:'Heebo',sans-serif; white-space:nowrap; }
+  .btn-learned:hover { background:#3a5732; }
+  .btn-delete { background:none; border:none; color:#ccc; font-size:1rem; cursor:pointer; padding:2px 5px; line-height:1; }
+  .btn-delete:hover { color:var(--rust); }
+  .wb-meta { font-size:0.78rem; color:#9a8860; direction:ltr; margin-bottom:0.5rem; }
+  .wb-source { font-size:0.72rem; color:#b0a080; direction:ltr; margin-bottom:0.5rem; }
+  .wb-sentence { background:var(--warm); border-radius:7px; padding:0.55rem 0.85rem; font-size:0.95rem; line-height:1.6; margin-bottom:0.4rem; }
+  .wb-sentence-en { font-size:0.78rem; color:#7a6a50; font-style:italic; direction:ltr; margin-top:0.2rem; }
+  .learned-card { background:white; border-radius:14px; padding:1.1rem 1.25rem; box-shadow:0 2px 10px var(--shadow); border-right:4px solid var(--sage); margin-bottom:0.85rem; }
+</style>
+</head>
+<body>
+<header>
+  <h1>מילון חכם</h1>
+  <p class="subtitle">Advanced Hebrew Vocabulary Extractor</p>
+</header>
+<main>
+  <div class="server-banner" id="serverBanner"></div>
+
+  <div class="nav-tabs">
+    <button class="nav-tab active" id="navAnalyze" onclick="switchPage('analyze')">🔍 נתח</button>
+    <button class="nav-tab" id="navBank" onclick="switchPage('bank')">📚 מילון שלי <span class="badge" id="bankBadge">0</span></button>
+    <button class="nav-tab" id="navLearned" onclick="switchPage('learned')">✅ למדתי <span class="badge" id="learnedBadge">0</span></button>
+  </div>
+
+  <!-- ANALYZE -->
+  <div class="page active" id="pageAnalyze">
+    <div class="source-tabs">
+      <button class="source-tab active" id="tabArticle" onclick="switchSource('article')">📰 כתבה / אתר</button>
+      <button class="source-tab" id="tabYoutube" onclick="switchSource('youtube')">▶️ YouTube</button>
+    </div>
+    <div class="input-section">
+      <div class="tab-panel active" id="panelArticle">
+        <label class="input-label">הדבק קישור לכתבה בעברית</label>
+        <div class="url-row">
+          <input type="url" id="articleInput" placeholder="https://www.haaretz.co.il/..." dir="ltr" />
+          <button class="analyze-btn" id="analyzeArticleBtn" onclick="analyzeArticle()">נתח 🔍</button>
+        </div>
+        <p class="hint">Works with Haaretz, Ynet, Walla, Wikipedia, and most Hebrew news sites.</p>
+      </div>
+      <div class="tab-panel" id="panelYoutube">
+        <label class="input-label">הדבק קישור לסרטון YouTube בעברית</label>
+        <div class="url-row">
+          <input type="text" id="ytInput" placeholder="https://www.youtube.com/watch?v=..." dir="ltr" oninput="onYtInput()" />
+          <button class="analyze-btn" id="analyzeYtBtn" onclick="analyzeYoutube()">נתח 🔍</button>
+        </div>
+        <div class="yt-preview" id="ytPreview">
+          <img class="yt-thumb" id="ytThumb" src="" alt="" />
+          <div><div class="yt-id" id="ytId"></div><div class="yt-sub">Local server connected ✅</div></div>
+        </div>
+        <p class="hint">⚙️ Requires local server: <code>py server.py</code></p>
+      </div>
+    </div>
+    <div class="error-box" id="errorBox"></div>
+    <div class="loading" id="loadingEl">
+      <div class="loader-dots"><span></span><span></span><span></span></div>
+      <p class="loading-text" id="loadingText">מעבד...</p>
+      <p class="loading-sub" id="loadingSub"></p>
+    </div>
+    <div class="results-header" id="resultsHeader">
+      <div class="results-title">מילים מתקדמות</div>
+      <div class="source-label" id="sourceLabel"></div>
+    </div>
+    <div class="selection-bar" id="selectionBar">
+      <span class="selection-hint">☑️ בחר מילים לשמירה במילון שלי (מקסימום 4 במילון)</span>
+      <span class="selection-count" id="selectionCount">0 נבחרו</span>
+      <button class="save-selected-btn" id="saveSelectedBtn" onclick="saveSelected()" disabled>💾 שמור נבחרות</button>
+    </div>
+    <div class="word-cards" id="wordCards">
+      <div class="empty-state"><div class="empty-icon">📖</div><p>הדבק קישור לכתבה או לסרטון YouTube בעברית</p></div>
+    </div>
+  </div>
+
+  <!-- WORD BANK -->
+  <div class="page" id="pageBank">
+    <div class="wb-toolbar">
+      <input type="text" class="wb-search" id="wbSearch" placeholder="חפש מילה..." oninput="renderBank()" />
+      <span class="wb-count" id="wbCount"></span>
+    </div>
+    <div id="wbCards">
+      <div class="empty-state"><div class="empty-icon">📚</div><p>עדיין אין מילים שמורות.<br>נתח טקסט, בחר מילים ולחץ שמור.</p></div>
+    </div>
+  </div>
+
+  <!-- LEARNED -->
+  <div class="page" id="pageLearned">
+    <div class="wb-toolbar">
+      <input type="text" class="wb-search" id="learnedSearch" placeholder="חפש מילה שלמדת..." oninput="renderLearned()" />
+      <span class="wb-count" id="learnedCount"></span>
+    </div>
+    <div id="learnedCards">
+      <div class="empty-state"><div class="empty-icon">🎓</div><p>עדיין לא העברת מילים לכאן.<br>לחץ "למדתי ✓" על מילה במילון שלי.</p></div>
+    </div>
+  </div>
+</main>
+
+<script>
+const SERVER = 'http://localhost:7779';
+let currentWords = [], currentSource = '', wordBank = [], learnedBank = [], selectedIndices = new Set();
+
+// ── SERVER ────────────────────────────────────────────────────────────────────
+let serverOk = false;
+async function checkServer() {
+  try { const r=await fetch(SERVER+'/health',{signal:AbortSignal.timeout(2000)}); serverOk=r.ok; } catch { serverOk=false; }
+  const b=document.getElementById('serverBanner');
+  if (serverOk) { b.className='server-banner ok'; b.textContent='✅  Local server is running — YouTube transcripts ready.'; }
+  else { b.className='server-banner err'; b.innerHTML='⚠️  Local server not detected. Run <code style="background:rgba(0,0,0,0.08);padding:1px 5px;border-radius:3px;font-family:monospace">py server.py</code> in your terminal.'; }
+}
+checkServer();
+
+// ── NAVIGATION ────────────────────────────────────────────────────────────────
+function switchPage(p) {
+  [['analyze','Analyze'],['bank','Bank'],['learned','Learned']].forEach(([k,c])=>{
+    document.getElementById('nav'+c).classList.toggle('active',k===p);
+    document.getElementById('page'+c).classList.toggle('active',k===p);
+  });
+  if(p==='bank') renderBank();
+  if(p==='learned') renderLearned();
+}
+function switchSource(s) {
+  ['article','youtube'].forEach(x=>{
+    document.getElementById('tab'+(x==='article'?'Article':'Youtube')).classList.toggle('active',x===s);
+    document.getElementById('panel'+(x==='article'?'Article':'Youtube')).classList.toggle('active',x===s);
+  });
+  hideError();
+  if(s==='youtube') checkServer();
+}
+
+// ── YOUTUBE ───────────────────────────────────────────────────────────────────
+function extractVideoId(url) {
+  try { const u=new URL(url); if(u.hostname.includes('youtu.be')) return u.pathname.slice(1).split('?')[0]; if(u.hostname.includes('youtube.com')) return u.searchParams.get('v'); } catch {} return null;
+}
+let ytTimer=null;
+function onYtInput() {
+  clearTimeout(ytTimer);
+  ytTimer=setTimeout(()=>{
+    const vid=extractVideoId(document.getElementById('ytInput').value.trim());
+    const p=document.getElementById('ytPreview');
+    if(!vid){p.classList.remove('visible');return;}
+    document.getElementById('ytThumb').src=`https://img.youtube.com/vi/${vid}/mqdefault.jpg`;
+    document.getElementById('ytId').textContent='youtube.com/watch?v='+vid;
+    p.classList.add('visible');
+  },350);
+}
+
+// ── UI HELPERS ────────────────────────────────────────────────────────────────
+function showError(msg){const e=document.getElementById('errorBox');e.innerHTML=msg.replace(/\n/g,'<br>');e.classList.add('active');}
+function hideError(){document.getElementById('errorBox').classList.remove('active');}
+function setLoading(on,text,sub){
+  document.getElementById('loadingEl').classList.toggle('active',on);
+  document.getElementById('analyzeArticleBtn').disabled=on;
+  document.getElementById('analyzeYtBtn').disabled=on;
+  if(text)document.getElementById('loadingText').textContent=text;
+  document.getElementById('loadingSub').textContent=sub||'';
+}
+function highlightWord(sentence,word){
+  const base=word.replace(/^(ל|ה|ו|ב|כ|מ|ש)/,'').replace(/[יה]$/,'');
+  if(base.length<2)return sentence;
+  try{return sentence.replace(new RegExp(`(${base}\\S*)`,'g'),'<span class="highlight">$1</span>');}catch{return sentence;}
+}
+
+// ── SELECTION ─────────────────────────────────────────────────────────────────
+function toggleSelect(idx,cb) {
+  if(cb.checked) selectedIndices.add(idx); else selectedIndices.delete(idx);
+  document.querySelectorAll('.word-card').forEach((c,i)=>c.classList.toggle('selected',selectedIndices.has(i)));
+  const n=selectedIndices.size;
+  document.getElementById('selectionCount').textContent=n+' נבחרו';
+  document.getElementById('saveSelectedBtn').disabled=n===0;
+}
+
+// ── RENDER ANALYSIS CARDS ─────────────────────────────────────────────────────
+function renderCards(words,sourceText) {
+  currentWords=words; currentSource=sourceText; selectedIndices.clear();
+  const container=document.getElementById('wordCards');
+  container.innerHTML='';
+  if(!words||!words.length){container.innerHTML='<div class="empty-state"><div class="empty-icon">🤔</div><p>לא נמצאו מילים מתקדמות</p></div>';document.getElementById('selectionBar').classList.remove('active');return;}
+  document.getElementById('resultsHeader').classList.add('active');
+  document.getElementById('sourceLabel').textContent=sourceText||'';
+  document.getElementById('selectionBar').classList.add('active');
+  document.getElementById('selectionCount').textContent='0 נבחרו';
+  document.getElementById('saveSelectedBtn').disabled=true;
+  words.forEach((w,i)=>{
+    const card=document.createElement('div');
+    card.className='word-card';
+    const meta=[w.translation,w.partOfSpeech,w.root?'שורש: '+w.root:null].filter(Boolean).join(' · ');
+    card.innerHTML=`
+      <input type="checkbox" class="card-checkbox" id="chk${i}" onchange="toggleSelect(${i},this)"/>
+      <div style="font-size:0.8rem;color:#9a8860;direction:ltr;margin-bottom:0.6rem;padding-left:1.8rem;">${meta}</div>
+      ${(w.sentences||[]).map(s=>`<div class="sentence">${highlightWord(s.hebrew,w.word)}<div class="sentence-translation">${s.english}</div></div>`).join('')}`;
+    container.appendChild(card);
+  });
+}
+
+// ── SAVE SELECTED ─────────────────────────────────────────────────────────────
+async function saveSelected() {
+  if(selectedIndices.size===0) return;
+  if(wordBank.length>=4){showError('המילון שלי מלא (4 מילים).\nלחץ "למדתי ✓" על מילה כדי לפנות מקום.');return;}
+  const btn=document.getElementById('saveSelectedBtn');
+  const toSave=[...selectedIndices].map(i=>currentWords[i]);
+  btn.disabled=true; btn.textContent='שומר...';
+  try {
+    const r=await fetch(SERVER+'/wordbank/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words:toSave,source:currentSource})});
+    if(!r.ok) throw new Error('Server error '+r.status);
+    btn.textContent='✅ נשמר!';
+    selectedIndices.clear();
+    document.querySelectorAll('.card-checkbox').forEach(c=>c.checked=false);
+    document.querySelectorAll('.word-card').forEach(c=>c.classList.remove('selected'));
+    document.getElementById('selectionCount').textContent='0 נבחרו';
+    await loadWordBank();
+    setTimeout(()=>{btn.textContent='💾 שמור נבחרות';btn.disabled=false;},2500);
+  } catch(e){btn.disabled=false;btn.textContent='💾 שמור נבחרות';showError('שגיאה בשמירה: '+e.message);}
+}
+
+// ── WORD BANK ─────────────────────────────────────────────────────────────────
+async function loadWordBank() {
+  try{const r=await fetch(SERVER+'/wordbank');if(!r.ok)throw new Error();const d=await r.json();wordBank=d.entries||[];}catch{wordBank=[];}
+  document.getElementById('bankBadge').textContent=wordBank.length;
+}
+
+async function archiveWord(word) {
+  const entry=wordBank.find(w=>w.word===word);
+  if(!entry) return;
+  try {
+    await fetch(SERVER+'/learnedbank/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words:[entry],source:entry.source||''})});
+    await fetch(SERVER+'/wordbank/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word})});
+    await loadWordBank(); await loadLearnedBank(); renderBank();
+  } catch{alert('שגיאה בהעברה');}
+}
+
+async function deleteWord(word) {
+  try{await fetch(SERVER+'/wordbank/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word})});await loadWordBank();renderBank();}catch{alert('שגיאה במחיקה');}
+}
+
+function renderBank() {
+  const q=(document.getElementById('wbSearch').value||'').trim().toLowerCase();
+  const filtered=q?wordBank.filter(w=>(w.word||'').includes(q)||(w.translation||'').toLowerCase().includes(q)):wordBank;
+  document.getElementById('wbCount').textContent=filtered.length+' מילים';
+  const container=document.getElementById('wbCards');
+  if(!filtered.length){container.innerHTML=wordBank.length===0?'<div class="empty-state"><div class="empty-icon">📚</div><p>עדיין אין מילים שמורות.<br>נתח טקסט, בחר מילים ולחץ שמור.</p></div>':'<div class="empty-state"><div class="empty-icon">🔍</div><p>לא נמצאו מילים</p></div>';return;}
+  container.innerHTML='';
+  filtered.forEach(w=>{
+    const card=document.createElement('div');
+    card.className='wb-card';
+    const safe=w.word.replace(/'/g,"\\'");
+    const meta=[w.translation,w.partOfSpeech,w.root?'שורש: '+w.root:null].filter(Boolean).join(' · ');
+    card.innerHTML=`
+      <div class="wb-actions">
+        <button class="btn-learned" onclick="archiveWord('${safe}')">למדתי ✓</button>
+        <button class="btn-delete" onclick="deleteWord('${safe}')">✕</button>
+      </div>
+      <div class="wb-meta">${meta}</div>
+      ${w.source?`<div class="wb-source">📌 ${w.source}${w.date?' · '+w.date:''}</div>`:''}
+      ${(w.sentences||[]).map(s=>`<div class="wb-sentence">${s.hebrew}<div class="wb-sentence-en">${s.english}</div></div>`).join('')}`;
+    container.appendChild(card);
+  });
+}
+
+// ── LEARNED BANK ──────────────────────────────────────────────────────────────
+async function loadLearnedBank() {
+  try{const r=await fetch(SERVER+'/learnedbank');if(!r.ok)throw new Error();const d=await r.json();learnedBank=d.entries||[];}catch{learnedBank=[];}
+  document.getElementById('learnedBadge').textContent=learnedBank.length;
+}
+
+function renderLearned() {
+  const q=(document.getElementById('learnedSearch').value||'').trim().toLowerCase();
+  const filtered=q?learnedBank.filter(w=>(w.word||'').includes(q)||(w.translation||'').toLowerCase().includes(q)):learnedBank;
+  document.getElementById('learnedCount').textContent=filtered.length+' מילים';
+  const container=document.getElementById('learnedCards');
+  if(!filtered.length){container.innerHTML=learnedBank.length===0?'<div class="empty-state"><div class="empty-icon">🎓</div><p>עדיין לא העברת מילים לכאן.<br>לחץ "למדתי ✓" על מילה במילון שלי.</p></div>':'<div class="empty-state"><div class="empty-icon">🔍</div><p>לא נמצאו מילים</p></div>';return;}
+  container.innerHTML='';
+  filtered.forEach(w=>{
+    const card=document.createElement('div');
+    card.className='learned-card';
+    const meta=[w.translation,w.partOfSpeech,w.root?'שורש: '+w.root:null].filter(Boolean).join(' · ');
+    card.innerHTML=`
+      <div class="wb-meta">${meta}</div>
+      ${w.source?`<div class="wb-source">📌 ${w.source}${w.date?' · '+w.date:''}</div>`:''}
+      ${(w.sentences||[]).map(s=>`<div class="wb-sentence">${s.hebrew}<div class="wb-sentence-en">${s.english}</div></div>`).join('')}`;
+    container.appendChild(card);
+  });
+}
+
+// ── CLAUDE ────────────────────────────────────────────────────────────────────
+async function analyzeWithClaude(text) {
+  const r=await fetch(SERVER+'/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
+  const data=await r.json();
+  if(data.error) throw new Error(data.error);
+  if(!data.words) throw new Error('לא ניתן לפענח את תשובת ה-AI');
+  return data.words;
+}
+
+// ── ANALYZE ARTICLE ───────────────────────────────────────────────────────────
+async function analyzeArticle() {
+  const url=document.getElementById('articleInput').value.trim();
+  if(!url){showError('אנא הדבק כתובת URL');return;}
+  hideError(); setLoading(true,'קורא את הכתבה...','');
+  document.getElementById('resultsHeader').classList.remove('active');
+  document.getElementById('selectionBar').classList.remove('active');
+  document.getElementById('wordCards').innerHTML='';
+  try {
+    let text='';
+    try{const r=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);if(r.ok){const d=await r.json();const div=document.createElement('div');div.innerHTML=d.contents||'';text=div.innerText||div.textContent||'';}}catch{}
+    if(!text||text.trim().length<80) throw new Error('לא ניתן לטעון את הכתבה.\nנסה Wikipedia בעברית או אתר אחר.');
+    setLoading(true,'מנתח מילים...','Claude מזהה מילים ברמה מתקדמת');
+    const domain=(()=>{try{return new URL(url).hostname.replace('www.','');}catch{return '';}})();
+    const words=await analyzeWithClaude(text);
+    renderCards(words,domain);
+  } catch(e){showError(e.message||'אירעה שגיאה');}
+  finally{setLoading(false);}
+}
+
+// ── ANALYZE YOUTUBE ───────────────────────────────────────────────────────────
+async function analyzeYoutube() {
+  const url=document.getElementById('ytInput').value.trim();
+  if(!url){showError('אנא הדבק קישור YouTube');return;}
+  const videoId=extractVideoId(url);
+  if(!videoId){showError('קישור YouTube לא תקין');return;}
+  await checkServer();
+  if(!serverOk){showError('השרת המקומי לא פועל.\n\nהרץ: py server.py בטרמינל ונסה שוב.');return;}
+  hideError(); setLoading(true,'מוריד כתוביות מ-YouTube...',videoId);
+  document.getElementById('resultsHeader').classList.remove('active');
+  document.getElementById('selectionBar').classList.remove('active');
+  document.getElementById('wordCards').innerHTML='';
+  try {
+    const r=await fetch(`${SERVER}/transcript?url=${encodeURIComponent(url)}`);
+    const data=await r.json();
+    if(data.error) throw new Error(data.error);
+    if(!data.transcript) throw new Error('לא התקבל טקסט מהשרת');
+    setLoading(true,'מנתח מילים...',data.language||'Hebrew');
+    const words=await analyzeWithClaude(data.transcript);
+    renderCards(words,'YouTube · '+videoId);
+  } catch(e){showError(e.message+(e.message.includes('subtitle')||e.message.includes('כתוביות')?'\n\n💡 נסה ערוץ חדשות ישראלי.':''));}
+  finally{setLoading(false);}
+}
+
+// ── ENTER KEY ─────────────────────────────────────────────────────────────────
+document.getElementById('articleInput').addEventListener('keydown',e=>{if(e.key==='Enter')analyzeArticle();});
+document.getElementById('ytInput').addEventListener('keydown',e=>{if(e.key==='Enter')analyzeYoutube();});
+
+// ── INIT ──────────────────────────────────────────────────────────────────────
+loadWordBank();
+loadLearnedBank();
+</script>
+</body>
+</html>
