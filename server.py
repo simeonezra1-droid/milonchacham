@@ -82,8 +82,28 @@ def extract_video_id(url_or_id):
             return qs['v'][0]
     raise ValueError(f"Cannot extract video ID from: {s!r}")
 
+PROXY_USERNAME = os.environ.get('WEBSHARE_USER', 'euxsvndg')
+PROXY_PASSWORD = os.environ.get('WEBSHARE_PASS', 'y8o5s8o3jesk')
+PROXY_URL = f"http://{PROXY_USERNAME}:{PROXY_PASSWORD}@p.webshare.io:80"
+
+def make_api():
+    from youtube_transcript_api.proxies import WebshareProxyConfig
+    try:
+        return YouTubeTranscriptApi(proxy_config=WebshareProxyConfig(
+            proxy_username=PROXY_USERNAME,
+            proxy_password=PROXY_PASSWORD
+        ))
+    except Exception:
+        # Fall back to direct if proxy config not supported
+        proxies = {"http": PROXY_URL, "https": PROXY_URL}
+        return YouTubeTranscriptApi(proxies=proxies)
+
 def get_hebrew_transcript(video_id):
-    api = YouTubeTranscriptApi()
+    try:
+        api = make_api()
+    except Exception:
+        api = YouTubeTranscriptApi()
+
     for lang_code in ('he', 'iw'):
         try:
             fetched = api.fetch(video_id, languages=[lang_code])
