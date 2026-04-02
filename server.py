@@ -14,7 +14,7 @@ except ImportError:
     print("\n❌  Missing dependency. Please run:\n\n    py -m pip install youtube-transcript-api\n")
     raise SystemExit(1)
 
-PORT = 7779
+PORT = int(os.environ.get('PORT', 7779))
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 HTML_FILE = os.path.join(BASE_DIR, "milonchacham.html")
 CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
@@ -39,15 +39,7 @@ def save_api_key(key):
 
 API_KEY = load_api_key()
 if not API_KEY:
-    print("\n🔑  No API key found.")
-    print("    Get yours at: https://console.anthropic.com/settings/keys\n")
-    key = input("    Paste your Anthropic API key here: ").strip()
-    if key:
-        save_api_key(key)
-        API_KEY = key
-        print("    ✅  Key saved to config.json\n")
-    else:
-        print("    ⚠️  No key entered. Claude analysis will not work.")
+    print("\n⚠️  No ANTHROPIC_API_KEY found. Set it as an environment variable.\n")
 
 # ─── WORD BANK ────────────────────────────────────────────────────────────────
 def load_wordbank():
@@ -296,8 +288,8 @@ if __name__ == "__main__":
 ╚══════════════════════════════════════════╝
   Press Ctrl+C to stop.
 """)
-    httpd = HTTPServer(("localhost", PORT), Handler)
-    threading.Timer(1.2, lambda: webbrowser.open(f"http://localhost:{PORT}")).start()
+    httpd = HTTPServer(("0.0.0.0", PORT), Handler)
+
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:

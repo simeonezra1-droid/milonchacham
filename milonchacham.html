@@ -202,7 +202,7 @@
 </main>
 
 <script>
-const SERVER = 'http://localhost:7779';
+const SERVER = window.location.hostname === 'localhost' ? 'http://localhost:7779' : window.location.origin;
 let currentWords = [], currentSource = '', wordBank = [], learnedBank = [], selectedIndices = new Set();
 
 // ── SERVER ────────────────────────────────────────────────────────────────────
