@@ -4,241 +4,417 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>מילון חכם</title>
-<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@300;400;500;700;900&family=Heebo:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Frank+Ruhl+Libre:wght@300;400;500;700;900&family=Heebo:wght@300;400;500;700&display=swap" rel="stylesheet">
 <style>
-  :root { --ink:#1a1208; --parchment:#f5f0e8; --warm:#f0e6d0; --gold:#c8952a; --rust:#9b3a1a; --sage:#4a6741; --shadow:rgba(26,18,8,0.12); }
-  * { box-sizing:border-box; margin:0; padding:0; }
-  body { background:var(--parchment); color:var(--ink); font-family:'Heebo',sans-serif; min-height:100vh; background-image:radial-gradient(ellipse at 20% 0%,rgba(200,149,42,0.08) 0%,transparent 60%),radial-gradient(ellipse at 80% 100%,rgba(155,58,26,0.06) 0%,transparent 60%); }
-  header { padding:2.5rem 2rem 1.5rem; text-align:center; border-bottom:1px solid rgba(200,149,42,0.25); }
-  header::after { content:''; display:block; width:60px; height:2px; background:var(--gold); margin:1rem auto 0; }
-  h1 { font-family:'Frank Ruhl Libre',serif; font-weight:900; font-size:clamp(2rem,5vw,3rem); letter-spacing:-0.02em; }
-  .subtitle { font-size:0.85rem; color:#7a6a50; margin-top:0.4rem; font-weight:300; direction:ltr; letter-spacing:0.06em; text-transform:uppercase; }
-  main { max-width:780px; margin:0 auto; padding:2rem 1.5rem 4rem; }
+  :root {
+    --ink:#1a1208; --parchment:#efe8d8; --warm:#e8dcc8; --card:#faf6ef;
+    --gold:#b8820a; --gold-light:#e8a820; --rust:#8b3214;
+    --sage:#3d5e36; --sage-light:#527a4a;
+    --border:rgba(26,18,8,0.12);
+    --shadow-sm:0 2px 8px rgba(26,18,8,0.08);
+    --shadow-md:0 4px 20px rgba(26,18,8,0.12);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{background:var(--parchment);color:var(--ink);font-family:'Heebo',sans-serif;min-height:100vh;
+    background-image:url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23b8820a' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E");}
 
-  .server-banner { display:none; padding:0.7rem 1rem; border-radius:10px; font-size:0.82rem; margin-bottom:1.25rem; direction:ltr; text-align:left; line-height:1.6; }
-  .server-banner.ok { background:#edfaed; border:1px solid #7dbd7d; color:#2a6a2a; display:block; }
-  .server-banner.err { background:#fff8ed; border:1px solid #e8b84b; color:#7a4a00; display:block; }
+  /* HEADER */
+  header{background:var(--card);border-bottom:2px solid var(--gold);padding:1.1rem 1.5rem;display:flex;align-items:center;justify-content:space-between;box-shadow:var(--shadow-sm);position:sticky;top:0;z-index:100;gap:1rem;flex-wrap:wrap;}
+  .header-left{display:flex;align-items:center;gap:1.5rem;}
+  .header-brand{display:flex;align-items:baseline;gap:0.6rem;}
+  .header-title{font-family:'Frank Ruhl Libre',serif;font-weight:900;font-size:1.5rem;letter-spacing:-0.02em;}
+  .header-subtitle{font-size:0.72rem;color:#9a8060;letter-spacing:0.08em;text-transform:uppercase;direction:ltr;}
+  .header-nav{display:flex;gap:0.4rem;flex-wrap:wrap;}
+  .hn-btn{padding:0.42rem 0.9rem;border:1.5px solid var(--border);background:transparent;border-radius:8px;font-family:'Frank Ruhl Libre',serif;font-size:0.88rem;font-weight:500;color:#7a6a50;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;gap:0.3rem;white-space:nowrap;}
+  .hn-btn:hover{background:var(--warm);color:var(--ink);border-color:var(--gold);}
+  .hn-btn.active{background:var(--gold);color:white;border-color:var(--gold);font-weight:700;}
+  .hn-badge{background:rgba(255,255,255,0.35);font-size:0.65rem;padding:1px 5px;border-radius:8px;font-weight:700;}
+  .hn-btn:not(.active) .hn-badge{background:var(--gold);color:white;}
+  .test-btn{padding:0.42rem 1rem;background:var(--rust);color:white;border:none;border-radius:8px;font-family:'Frank Ruhl Libre',serif;font-size:0.88rem;font-weight:700;cursor:pointer;transition:background 0.18s;display:flex;align-items:center;gap:0.35rem;}
+  .test-btn:hover{background:#7a2810;}
+  .test-btn:disabled{background:#ccc;cursor:not-allowed;}
 
-  .nav-tabs { display:flex; margin-bottom:1.5rem; background:white; border-radius:14px; padding:5px; box-shadow:0 2px 16px var(--shadow),0 0 0 1px rgba(200,149,42,0.1); }
-  .nav-tab { flex:1; padding:0.65rem 0.4rem; border:none; background:transparent; border-radius:10px; font-family:'Frank Ruhl Libre',serif; font-size:0.88rem; font-weight:500; color:#9a8860; cursor:pointer; transition:background 0.2s,color 0.2s; display:flex; align-items:center; justify-content:center; gap:0.3rem; }
-  .nav-tab.active { background:var(--gold); color:white; font-weight:700; }
-  .nav-tab:not(.active):hover { background:var(--warm); color:var(--ink); }
-  .badge { background:var(--gold); color:white; font-size:0.68rem; padding:1px 6px; border-radius:10px; font-weight:700; }
-  .nav-tab.active .badge { background:rgba(255,255,255,0.3); }
+  /* LAYOUT */
+  .app-layout{display:grid;grid-template-columns:300px 1fr;min-height:calc(100vh - 60px);}
+  .sidebar{padding:1.25rem 1.1rem;background:var(--card);position:sticky;top:60px;height:calc(100vh - 60px);overflow-y:auto;display:flex;flex-direction:column;gap:0.85rem;border-left:1px solid var(--border);}
+  .main-col{padding:1.5rem 1.75rem 3rem;border-right:1px solid var(--border);min-width:0;}
 
-  .page { display:none; }
-  .page.active { display:block; }
+  /* PAGES */
+  .page{display:none;} .page.active{display:block;}
 
-  .source-tabs { display:flex; margin-bottom:1.5rem; background:white; border-radius:14px; padding:5px; box-shadow:0 2px 16px var(--shadow),0 0 0 1px rgba(200,149,42,0.1); }
-  .source-tab { flex:1; padding:0.65rem 1rem; border:none; background:transparent; border-radius:10px; font-family:'Frank Ruhl Libre',serif; font-size:1rem; font-weight:500; color:#9a8860; cursor:pointer; transition:background 0.2s,color 0.2s; display:flex; align-items:center; justify-content:center; gap:0.4rem; }
-  .source-tab.active { background:var(--gold); color:white; font-weight:700; }
-  .source-tab:not(.active):hover { background:var(--warm); color:var(--ink); }
+  /* SERVER BANNER */
+  .server-banner{display:none;padding:0.55rem 0.9rem;border-radius:8px;font-size:0.76rem;margin-bottom:1.1rem;direction:ltr;line-height:1.5;}
+  .server-banner.ok{background:#edfaed;border:1px solid #7dbd7d;color:#2a6a2a;display:block;}
+  .server-banner.err{background:#fff8ed;border:1px solid var(--gold-light);color:#7a4a00;display:block;}
 
-  .input-section { background:white; border-radius:16px; padding:1.75rem; box-shadow:0 2px 20px var(--shadow),0 0 0 1px rgba(200,149,42,0.1); margin-bottom:2rem; }
-  .tab-panel { display:none; }
-  .tab-panel.active { display:block; }
-  .input-label { font-family:'Frank Ruhl Libre',serif; font-size:1.05rem; font-weight:500; margin-bottom:0.75rem; display:block; }
-  .url-row { display:flex; gap:0.75rem; flex-wrap:wrap; }
-  input[type="url"],input[type="text"] { flex:1; min-width:200px; padding:0.75rem 1rem; border:1.5px solid rgba(200,149,42,0.3); border-radius:10px; font-size:0.9rem; font-family:'Heebo',sans-serif; background:var(--warm); color:var(--ink); direction:ltr; outline:none; transition:border-color 0.2s,background 0.2s; }
-  input:focus { border-color:var(--gold); background:white; }
-  input::placeholder { color:#b0a080; }
-  .analyze-btn { padding:0.75rem 1.5rem; background:var(--gold); color:white; border:none; border-radius:10px; font-family:'Frank Ruhl Libre',serif; font-size:1rem; font-weight:700; cursor:pointer; transition:background 0.2s,transform 0.1s; white-space:nowrap; }
-  .analyze-btn:hover { background:#b07d1e; }
-  .analyze-btn:active { transform:scale(0.98); }
-  .analyze-btn:disabled { background:#c8b88a; cursor:not-allowed; }
-  .hint { margin-top:0.85rem; font-size:0.78rem; color:#7a6a50; direction:ltr; text-align:left; line-height:1.7; padding:0.65rem 0.9rem; background:var(--warm); border-radius:8px; }
-  .hint code { background:rgba(0,0,0,0.07); border-radius:4px; padding:1px 5px; font-size:0.85em; font-family:monospace; }
+  /* SOURCE SWITCHER */
+  .source-switcher{display:flex;background:var(--warm);border-radius:12px;padding:4px;margin-bottom:1.1rem;border:1.5px solid var(--border);}
+  .ss-btn{flex:1;padding:0.55rem 0.5rem;border:none;background:transparent;border-radius:9px;font-family:'Frank Ruhl Libre',serif;font-size:0.88rem;font-weight:500;color:#7a6a50;cursor:pointer;transition:all 0.18s;display:flex;align-items:center;justify-content:center;gap:0.4rem;}
+  .ss-btn.active{background:var(--card);color:var(--ink);font-weight:700;box-shadow:var(--shadow-sm);}
+  .ss-label{font-size:0.65rem;text-transform:uppercase;letter-spacing:0.05em;opacity:0.65;}
 
-  .yt-preview { display:none; margin-top:1rem; padding:0.85rem 1rem; background:var(--warm); border-radius:10px; border:1px solid rgba(200,149,42,0.25); align-items:center; gap:0.75rem; }
-  .yt-preview.visible { display:flex; }
-  .yt-thumb { width:80px; height:45px; border-radius:6px; object-fit:cover; flex-shrink:0; background:#ddd; }
-  .yt-id { font-size:0.88rem; font-weight:600; direction:ltr; }
-  .yt-sub { font-size:0.75rem; color:#9a8860; direction:ltr; margin-top:2px; }
+  /* INPUT CARD */
+  .input-card{background:var(--card);border-radius:14px;padding:1.25rem 1.4rem;box-shadow:var(--shadow-sm);border:1.5px solid var(--border);margin-bottom:1.25rem;}
+  .tab-panel{display:none;} .tab-panel.active{display:block;}
+  .input-label{font-family:'Frank Ruhl Libre',serif;font-size:0.82rem;font-weight:700;color:#9a8060;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.55rem;display:flex;align-items:center;gap:0.4rem;}
+  .input-label::before{content:'';display:inline-block;width:3px;height:13px;background:var(--gold);border-radius:2px;}
+  .url-row{display:flex;gap:0.55rem;}
+  input[type="url"],input[type="text"]{flex:1;padding:0.68rem 0.9rem;border:1.5px solid var(--border);border-radius:9px;font-size:0.88rem;font-family:'Heebo',sans-serif;background:var(--warm);color:var(--ink);direction:ltr;outline:none;transition:border-color 0.18s,background 0.18s;}
+  input[type="text"].rtl-input{direction:rtl;}
+  input:focus{border-color:var(--gold);background:white;}
+  input::placeholder{color:#b0a080;}
+  .go-btn{padding:0.68rem 1.2rem;background:var(--gold);color:white;border:none;border-radius:9px;font-family:'Frank Ruhl Libre',serif;font-size:0.95rem;font-weight:700;cursor:pointer;transition:background 0.18s,transform 0.1s;white-space:nowrap;}
+  .go-btn:hover{background:#9a6e08;} .go-btn:active{transform:scale(0.97);} .go-btn:disabled{background:#c8b88a;cursor:not-allowed;}
+  .yt-preview{display:none;margin-top:0.75rem;padding:0.7rem;background:var(--warm);border-radius:9px;border:1px solid var(--border);align-items:center;gap:0.65rem;}
+  .yt-preview.visible{display:flex;}
+  .yt-thumb{width:70px;height:39px;border-radius:5px;object-fit:cover;flex-shrink:0;background:#ddd;}
+  .yt-id{font-size:0.8rem;font-weight:600;direction:ltr;} .yt-sub{font-size:0.7rem;color:#9a8060;direction:ltr;margin-top:2px;}
+  .hint{margin-top:0.65rem;font-size:0.73rem;color:#9a8060;direction:ltr;line-height:1.6;}
+  .hint code{background:rgba(0,0,0,0.06);border-radius:3px;padding:1px 5px;font-family:monospace;font-size:0.85em;}
 
-  .loading { display:none; text-align:center; padding:3rem 1rem; }
-  .loading.active { display:block; }
-  .loader-dots { display:inline-flex; gap:8px; margin-bottom:1rem; }
-  .loader-dots span { width:10px; height:10px; background:var(--gold); border-radius:50%; animation:bounce 1.2s infinite ease-in-out; }
-  .loader-dots span:nth-child(2){animation-delay:0.2s} .loader-dots span:nth-child(3){animation-delay:0.4s}
-  @keyframes bounce { 0%,80%,100%{transform:scale(0.6);opacity:0.4} 40%{transform:scale(1);opacity:1} }
-  .loading-text { font-family:'Frank Ruhl Libre',serif; font-size:1.05rem; color:#7a6a50; }
-  .loading-sub { font-size:0.8rem; color:#b0a080; margin-top:0.4rem; }
+  /* LOADING & ERROR */
+  .loading{display:none;text-align:center;padding:2.5rem 1rem;} .loading.active{display:block;}
+  .loader-dots{display:inline-flex;gap:7px;margin-bottom:0.75rem;}
+  .loader-dots span{width:8px;height:8px;background:var(--gold);border-radius:50%;animation:bounce 1.2s infinite ease-in-out;}
+  .loader-dots span:nth-child(2){animation-delay:0.2s;} .loader-dots span:nth-child(3){animation-delay:0.4s;}
+  @keyframes bounce{0%,80%,100%{transform:scale(0.55);opacity:0.35;}40%{transform:scale(1);opacity:1;}}
+  .loading-text{font-family:'Frank Ruhl Libre',serif;font-size:0.95rem;color:#7a6a50;} .loading-sub{font-size:0.76rem;color:#b0a080;margin-top:0.3rem;}
+  .error-box{display:none;background:#fff5f3;border:1.5px solid #e0a090;border-radius:10px;padding:0.9rem 1.1rem;color:var(--rust);font-size:0.85rem;margin-bottom:1.1rem;line-height:1.6;} .error-box.active{display:block;}
 
-  .error-box { display:none; background:#fff5f3; border:1.5px solid #e0a090; border-radius:12px; padding:1.2rem 1.5rem; color:var(--rust); font-size:0.9rem; margin-bottom:1.5rem; line-height:1.7; }
-  .error-box.active { display:block; }
+  /* RESULTS */
+  .results-header{display:none;align-items:center;justify-content:space-between;margin-bottom:0.85rem;flex-wrap:wrap;gap:0.5rem;} .results-header.active{display:flex;}
+  .results-title{font-family:'Frank Ruhl Libre',serif;font-size:1.2rem;font-weight:700;}
+  .source-pill{font-size:0.7rem;color:#9a8060;direction:ltr;background:var(--warm);padding:3px 10px;border-radius:20px;border:1px solid var(--border);}
+  .selection-bar{display:none;align-items:center;gap:0.55rem;padding:0.65rem 0.85rem;background:var(--card);border-radius:10px;border:1.5px solid var(--border);margin-bottom:0.85rem;flex-wrap:wrap;} .selection-bar.active{display:flex;}
+  .sel-hint{font-size:0.78rem;color:#7a6a50;flex:1;} .sel-count{font-size:0.8rem;font-weight:700;color:var(--gold);}
+  .save-btn{padding:0.4rem 1rem;background:var(--sage);color:white;border:none;border-radius:8px;font-family:'Frank Ruhl Libre',serif;font-size:0.85rem;font-weight:700;cursor:pointer;transition:background 0.18s;white-space:nowrap;}
+  .save-btn:hover{background:var(--sage-light);} .save-btn:disabled{background:#aaa;cursor:not-allowed;}
 
-  .results-header { display:none; align-items:center; justify-content:space-between; margin-bottom:1rem; flex-wrap:wrap; gap:0.5rem; }
-  .results-header.active { display:flex; }
-  .results-title { font-family:'Frank Ruhl Libre',serif; font-size:1.4rem; font-weight:700; }
-  .source-label { font-size:0.78rem; color:#9a8860; direction:ltr; width:100%; }
+  /* WORD CARDS */
+  .word-cards{display:grid;gap:0.75rem;}
+  @keyframes fadeUp{from{opacity:0;transform:translateY(10px);}to{opacity:1;transform:translateY(0);}}
+  .word-card{background:var(--card);border-radius:11px;padding:1rem 1.1rem;box-shadow:var(--shadow-sm);border:1.5px solid var(--border);border-right:4px solid var(--gold);animation:fadeUp 0.3s ease both;position:relative;}
+  .word-card.selected{border-right-color:var(--sage)!important;border-color:var(--sage);background:#f2f7f1;}
+  .word-card:nth-child(3n+1){border-right-color:var(--gold);} .word-card:nth-child(3n+2){border-right-color:var(--rust);} .word-card:nth-child(3n){border-right-color:var(--sage-light);}
+  .word-card:nth-child(1){animation-delay:.03s;}.word-card:nth-child(2){animation-delay:.06s;}.word-card:nth-child(3){animation-delay:.09s;}.word-card:nth-child(4){animation-delay:.12s;}.word-card:nth-child(5){animation-delay:.15s;}
+  .card-check{position:absolute;top:0.9rem;left:0.9rem;width:16px;height:16px;accent-color:var(--sage);cursor:pointer;}
+  .card-meta{font-size:0.72rem;color:#9a8060;direction:ltr;margin-bottom:0.45rem;padding-left:1.5rem;display:flex;align-items:center;gap:0.4rem;flex-wrap:wrap;}
+  .pill{background:var(--warm);border:1px solid var(--border);border-radius:20px;padding:1px 7px;font-size:0.65rem;text-transform:uppercase;letter-spacing:0.04em;color:#7a6a50;}
+  .sentence{background:var(--warm);border-radius:7px;padding:0.55rem 0.85rem;font-size:0.95rem;line-height:1.6;margin-bottom:0.35rem;border:1px solid rgba(26,18,8,0.06);}
+  .sentence:last-child{margin-bottom:0;}
+  .sentence-en{font-size:0.73rem;color:#7a6a50;font-style:italic;direction:ltr;margin-top:0.2rem;}
+  .highlight{background:rgba(184,130,10,0.18);border-radius:3px;padding:0 2px;font-weight:700;}
+  .empty-state{text-align:center;padding:2.5rem 1rem;color:#b0a080;}
+  .empty-icon{font-size:2.2rem;margin-bottom:0.65rem;opacity:0.45;}
+  .empty-state p{font-family:'Frank Ruhl Libre',serif;font-size:0.95rem;line-height:1.6;}
 
-  .selection-bar { display:none; align-items:center; gap:0.75rem; padding:0.75rem 1rem; background:white; border-radius:12px; box-shadow:0 2px 12px var(--shadow); margin-bottom:1rem; flex-wrap:wrap; }
-  .selection-bar.active { display:flex; }
-  .selection-hint { font-size:0.85rem; color:#7a6a50; flex:1; }
-  .selection-count { font-size:0.85rem; font-weight:600; color:var(--gold); }
-  .save-selected-btn { padding:0.5rem 1.2rem; background:var(--sage); color:white; border:none; border-radius:20px; font-family:'Frank Ruhl Libre',serif; font-size:0.9rem; font-weight:700; cursor:pointer; transition:background 0.2s; white-space:nowrap; }
-  .save-selected-btn:hover { background:#3a5732; }
-  .save-selected-btn:disabled { background:#aaa; cursor:not-allowed; }
+  /* SIDEBAR */
+  .sidebar-heading{font-family:'Frank Ruhl Libre',serif;font-size:0.68rem;font-weight:700;text-transform:uppercase;letter-spacing:0.1em;color:#9a8060;margin-bottom:0.65rem;display:flex;align-items:center;justify-content:space-between;}
+  .sidebar-heading .count{background:var(--gold);color:white;font-size:0.62rem;padding:1px 6px;border-radius:8px;font-weight:700;}
+  .sidebar-empty{font-size:0.76rem;color:#b0a080;text-align:center;padding:0.75rem 0;font-family:'Frank Ruhl Libre',serif;}
+  .sb-slots{display:flex;gap:0.3rem;margin-bottom:0.65rem;}
+  .sb-slot{flex:1;height:5px;border-radius:3px;background:var(--border);transition:background 0.3s;}
+  .sb-slot.filled{background:var(--sage);}
+  .sb-word-card{background:var(--warm);border-radius:8px;padding:0.65rem 0.75rem;margin-bottom:0.45rem;border:1px solid var(--border);border-right:3px solid var(--sage);}
+  .sb-word-card:last-child{margin-bottom:0;}
+  .sb-word{font-family:'Frank Ruhl Libre',serif;font-size:1.15rem;font-weight:700;margin-bottom:0.15rem;}
+  .sb-meta{font-size:0.68rem;color:#9a8060;direction:ltr;margin-bottom:0.35rem;}
+  .sb-sentence{font-size:0.78rem;line-height:1.5;padding:0.35rem 0.55rem;background:var(--card);border-radius:4px;}
+  .sb-sentence-en{font-size:0.66rem;color:#9a8060;font-style:italic;direction:ltr;margin-top:0.12rem;}
+  .sb-actions{display:flex;gap:0.3rem;margin-top:0.45rem;}
+  .sb-btn-learned{flex:1;padding:0.28rem 0;background:var(--sage);color:white;border:none;border-radius:4px;font-size:0.68rem;font-family:'Heebo',sans-serif;font-weight:600;cursor:pointer;transition:background 0.15s;}
+  .sb-btn-learned:hover{background:var(--sage-light);}
+  .sb-btn-delete{padding:0.28rem 0.45rem;background:none;border:1px solid var(--border);border-radius:4px;color:#bbb;font-size:0.75rem;cursor:pointer;transition:color 0.15s,border-color 0.15s;}
+  .sb-btn-delete:hover{color:var(--rust);border-color:var(--rust);}
+  .sidebar-divider{height:1px;background:var(--border);margin:0.75rem 0;}
 
-  .word-cards { display:grid; gap:1rem; }
-  .word-card { background:white; border-radius:14px; padding:1.25rem 1.5rem; box-shadow:0 2px 12px var(--shadow); border-right:4px solid var(--gold); animation:fadeUp 0.4s ease both; transition:box-shadow 0.2s; position:relative; }
-  .word-card.selected { border-right-color:var(--sage) !important; box-shadow:0 0 0 2px var(--sage),0 4px 16px var(--shadow); }
-  @keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-  .word-card:nth-child(3n+1){border-color:var(--gold)} .word-card:nth-child(3n+2){border-color:var(--rust)} .word-card:nth-child(3n){border-color:var(--sage)}
-  .word-card:nth-child(1){animation-delay:.04s} .word-card:nth-child(2){animation-delay:.08s} .word-card:nth-child(3){animation-delay:.12s} .word-card:nth-child(4){animation-delay:.16s} .word-card:nth-child(5){animation-delay:.20s}
-  .card-checkbox { position:absolute; top:1.1rem; left:1rem; width:18px; height:18px; accent-color:var(--sage); cursor:pointer; }
-  .sentence { background:var(--warm); border-radius:8px; padding:0.7rem 1rem; font-size:1rem; line-height:1.6; margin-bottom:0.5rem; }
-  .sentence:last-child { margin-bottom:0; }
-  .sentence-translation { font-size:0.8rem; color:#7a6a50; font-style:italic; direction:ltr; margin-top:0.3rem; }
-  .highlight { background:rgba(200,149,42,0.22); border-radius:3px; padding:0 2px; font-weight:700; }
+  /* RESOURCES SECTION */
+  .res-item{display:flex;align-items:center;gap:0.5rem;padding:0.45rem 0.55rem;background:var(--warm);border-radius:7px;margin-bottom:0.35rem;border:1px solid var(--border);text-decoration:none;color:var(--ink);transition:background 0.15s;}
+  .res-item:hover{background:#ddd5be;}
+  .res-icon{font-size:0.9rem;flex-shrink:0;}
+  .res-title{font-size:0.78rem;font-weight:600;line-height:1.3;}
+  .res-desc{font-size:0.66rem;color:#9a8060;direction:ltr;}
 
-  .empty-state { text-align:center; padding:3rem 1rem; color:#b0a080; }
-  .empty-icon { font-size:3rem; margin-bottom:1rem; opacity:0.5; }
-  .empty-state p { font-family:'Frank Ruhl Libre',serif; font-size:1.1rem; }
+  /* LEARNED PAGE */
+  .wb-toolbar{display:flex;gap:0.65rem;margin-bottom:1.1rem;flex-wrap:wrap;align-items:center;}
+  .wb-search{flex:1;min-width:180px;padding:0.62rem 0.9rem;border:1.5px solid var(--border);border-radius:9px;font-size:0.88rem;font-family:'Heebo',sans-serif;background:var(--card);color:var(--ink);direction:rtl;outline:none;transition:border-color 0.18s;}
+  .wb-search:focus{border-color:var(--gold);} .wb-search::placeholder{color:#b0a080;}
+  .wb-count{font-size:0.78rem;color:#9a8060;}
+  .learned-card{background:var(--card);border-radius:11px;padding:1rem 1.1rem;box-shadow:var(--shadow-sm);border:1.5px solid var(--border);border-right:4px solid var(--sage);margin-bottom:0.75rem;animation:fadeUp 0.3s ease both;}
+  .lc-meta{font-size:0.72rem;color:#9a8060;direction:ltr;margin-bottom:0.45rem;display:flex;gap:0.4rem;flex-wrap:wrap;}
+  .lc-source{font-size:0.68rem;color:#b0a080;direction:ltr;margin-bottom:0.45rem;}
+  .lc-sentence{background:var(--warm);border-radius:7px;padding:0.5rem 0.8rem;font-size:0.93rem;line-height:1.6;margin-bottom:0.35rem;}
+  .lc-sentence-en{font-size:0.72rem;color:#7a6a50;font-style:italic;direction:ltr;margin-top:0.2rem;}
 
-  /* BANK & LEARNED */
-  .wb-toolbar { display:flex; gap:0.75rem; margin-bottom:1.5rem; flex-wrap:wrap; align-items:center; }
-  .wb-search { flex:1; min-width:180px; padding:0.7rem 1rem; border:1.5px solid rgba(200,149,42,0.3); border-radius:10px; font-size:0.95rem; font-family:'Heebo',sans-serif; background:white; color:var(--ink); direction:rtl; outline:none; transition:border-color 0.2s; }
-  .wb-search:focus { border-color:var(--gold); }
-  .wb-search::placeholder { color:#b0a080; }
-  .wb-count { font-size:0.82rem; color:#9a8860; white-space:nowrap; }
-  .wb-card { background:white; border-radius:14px; padding:1.1rem 1.25rem 1.1rem 1.25rem; box-shadow:0 2px 10px var(--shadow); border-right:4px solid var(--sage); margin-bottom:0.85rem; position:relative; padding-top:2.8rem; }
-  .wb-card:nth-child(3n+1){border-color:var(--gold)} .wb-card:nth-child(3n+2){border-color:var(--rust)} .wb-card:nth-child(3n){border-color:var(--sage)}
-  .wb-actions { position:absolute; top:0.75rem; left:0.75rem; display:flex; gap:0.4rem; }
-  .btn-learned { background:var(--sage); color:white; border:none; border-radius:6px; font-size:0.7rem; padding:3px 8px; cursor:pointer; font-family:'Heebo',sans-serif; white-space:nowrap; }
-  .btn-learned:hover { background:#3a5732; }
-  .btn-delete { background:none; border:none; color:#ccc; font-size:1rem; cursor:pointer; padding:2px 5px; line-height:1; }
-  .btn-delete:hover { color:var(--rust); }
-  .wb-meta { font-size:0.78rem; color:#9a8860; direction:ltr; margin-bottom:0.5rem; }
-  .wb-source { font-size:0.72rem; color:#b0a080; direction:ltr; margin-bottom:0.5rem; }
-  .wb-sentence { background:var(--warm); border-radius:7px; padding:0.55rem 0.85rem; font-size:0.95rem; line-height:1.6; margin-bottom:0.4rem; }
-  .wb-sentence-en { font-size:0.78rem; color:#7a6a50; font-style:italic; direction:ltr; margin-top:0.2rem; }
-  .learned-card { background:white; border-radius:14px; padding:1.1rem 1.25rem; box-shadow:0 2px 10px var(--shadow); border-right:4px solid var(--sage); margin-bottom:0.85rem; }
+  /* TEST ME MODAL */
+  .modal-overlay{display:none;position:fixed;inset:0;background:rgba(26,18,8,0.55);z-index:200;align-items:center;justify-content:center;}
+  .modal-overlay.active{display:flex;}
+  .modal{background:var(--card);border-radius:18px;padding:2rem 2.25rem;max-width:480px;width:90%;box-shadow:var(--shadow-md);border:2px solid var(--gold);direction:rtl;}
+  .modal-title{font-family:'Frank Ruhl Libre',serif;font-size:1.4rem;font-weight:900;margin-bottom:0.25rem;}
+  .modal-sub{font-size:0.78rem;color:#9a8060;margin-bottom:1.5rem;}
+  .test-card{text-align:center;margin-bottom:1.5rem;}
+  .test-translation{font-family:'Frank Ruhl Libre',serif;font-size:2rem;font-weight:700;color:var(--ink);margin-bottom:0.35rem;}
+  .test-pos{font-size:0.78rem;color:#9a8060;margin-bottom:1.25rem;}
+  .test-input{width:100%;padding:0.85rem 1rem;border:2px solid var(--border);border-radius:10px;font-size:1.1rem;font-family:'Frank Ruhl Libre',serif;text-align:center;direction:rtl;outline:none;background:var(--warm);transition:border-color 0.18s;}
+  .test-input:focus{border-color:var(--gold);background:white;}
+  .test-input.correct{border-color:var(--sage);background:#edfaed;}
+  .test-input.wrong{border-color:var(--rust);background:#fff5f3;}
+  .test-feedback{font-size:0.88rem;text-align:center;margin-top:0.5rem;min-height:1.4em;font-weight:600;}
+  .test-feedback.correct{color:var(--sage);}
+  .test-feedback.wrong{color:var(--rust);}
+  .test-actions{display:flex;gap:0.65rem;margin-top:1.25rem;}
+  .test-check-btn{flex:1;padding:0.75rem;background:var(--gold);color:white;border:none;border-radius:10px;font-family:'Frank Ruhl Libre',serif;font-size:1rem;font-weight:700;cursor:pointer;transition:background 0.18s;}
+  .test-check-btn:hover{background:#9a6e08;}
+  .test-next-btn{flex:1;padding:0.75rem;background:var(--sage);color:white;border:none;border-radius:10px;font-family:'Frank Ruhl Libre',serif;font-size:1rem;font-weight:700;cursor:pointer;transition:background 0.18s;display:none;}
+  .test-next-btn:hover{background:var(--sage-light);}
+  .test-close-btn{padding:0.75rem 1.1rem;background:none;color:#9a8060;border:1.5px solid var(--border);border-radius:10px;font-family:'Frank Ruhl Libre',serif;font-size:0.9rem;cursor:pointer;transition:background 0.18s;}
+  .test-close-btn:hover{background:var(--warm);}
+  .test-progress{font-size:0.75rem;color:#9a8060;text-align:center;margin-bottom:1rem;}
+  .test-score{font-family:'Frank Ruhl Libre',serif;font-size:1.1rem;text-align:center;margin-bottom:1rem;}
+
+  @media(max-width:700px){
+    .app-layout{grid-template-columns:1fr;display:flex;flex-direction:column;}
+    .sidebar{position:static;height:auto;border-left:none;border-top:2px solid var(--border);}
+    header{padding:0.85rem 1rem;}
+    .header-left{flex-wrap:wrap;gap:0.75rem;}
+  }
 </style>
 </head>
 <body>
+
 <header>
-  <h1>מילון חכם</h1>
-  <p class="subtitle">Advanced Hebrew Vocabulary Extractor</p>
+  <div class="header-left">
+    <div class="header-brand">
+      <span class="header-title">מילון חכם</span>
+      <span class="header-subtitle">Hebrew Vocab Tool</span>
+    </div>
+    <nav class="header-nav">
+      <button class="hn-btn active" id="navAnalyze" onclick="switchPage('analyze')">🔍 נתח</button>
+      <button class="hn-btn" id="navLearned" onclick="switchPage('learned')">🎓 למדתי <span class="hn-badge" id="learnedBadge">0</span></button>
+      <button class="hn-btn" id="navResources" onclick="switchPage('resources')">🔗 משאבים</button>
+    </nav>
+  </div>
+  <button class="test-btn" id="testMeBtn" onclick="openTest()">🧪 בחן אותי!</button>
 </header>
-<main>
-  <div class="server-banner" id="serverBanner"></div>
 
-  <div class="nav-tabs">
-    <button class="nav-tab active" id="navAnalyze" onclick="switchPage('analyze')">🔍 נתח</button>
-    <button class="nav-tab" id="navBank" onclick="switchPage('bank')">📚 מילון שלי <span class="badge" id="bankBadge">0</span></button>
-    <button class="nav-tab" id="navLearned" onclick="switchPage('learned')">✅ למדתי <span class="badge" id="learnedBadge">0</span></button>
-  </div>
+<!-- ANALYZE PAGE -->
+<div class="page active" id="pageAnalyze">
+  <div class="app-layout">
 
-  <!-- ANALYZE -->
-  <div class="page active" id="pageAnalyze">
-    <div class="source-tabs">
-      <button class="source-tab active" id="tabArticle" onclick="switchSource('article')">📰 כתבה / אתר</button>
-      <button class="source-tab" id="tabYoutube" onclick="switchSource('youtube')">▶️ YouTube</button>
-    </div>
-    <div class="input-section">
-      <div class="tab-panel active" id="panelArticle">
-        <label class="input-label">הדבק קישור לכתבה בעברית</label>
-        <div class="url-row">
-          <input type="url" id="articleInput" placeholder="https://www.haaretz.co.il/..." dir="ltr" />
-          <button class="analyze-btn" id="analyzeArticleBtn" onclick="analyzeArticle()">נתח 🔍</button>
+    <!-- SIDEBAR (first = right in RTL) -->
+    <div class="sidebar">
+      <div>
+        <div class="sidebar-heading">המילים שלי <span class="count" id="sbCount">0 / 4</span></div>
+        <div class="sb-slots">
+          <div class="sb-slot" id="slot0"></div><div class="sb-slot" id="slot1"></div>
+          <div class="sb-slot" id="slot2"></div><div class="sb-slot" id="slot3"></div>
         </div>
-        <p class="hint">Works with Haaretz, Ynet, Walla, Wikipedia, and most Hebrew news sites.</p>
+        <div id="sbWords"><div class="sidebar-empty">עדיין אין מילים שמורות</div></div>
       </div>
-      <div class="tab-panel" id="panelYoutube">
-        <label class="input-label">הדבק קישור לסרטון YouTube בעברית</label>
-        <div class="url-row">
-          <input type="text" id="ytInput" placeholder="https://www.youtube.com/watch?v=..." dir="ltr" oninput="onYtInput()" />
-          <button class="analyze-btn" id="analyzeYtBtn" onclick="analyzeYoutube()">נתח 🔍</button>
+
+      <div class="sidebar-divider"></div>
+
+      <div>
+        <div class="sidebar-heading">למדתי לאחרונה</div>
+        <div id="sbLearned"><div class="sidebar-empty">לא למדת מילים עדיין</div></div>
+      </div>
+
+    </div>
+
+    <!-- MAIN COLUMN (second = left in RTL) -->
+    <div class="main-col">
+      <div class="server-banner" id="serverBanner"></div>
+
+      <div class="source-switcher">
+        <button class="ss-btn active" id="tabArticle" onclick="switchSource('article')">
+          <span>📰</span><div><div>כתבה / אתר</div><div class="ss-label">Article</div></div>
+        </button>
+        <button class="ss-btn" id="tabYoutube" onclick="switchSource('youtube')">
+          <span>▶️</span><div><div>YouTube</div><div class="ss-label">Video</div></div>
+        </button>
+        <button class="ss-btn" id="tabWord" onclick="switchSource('word')">
+          <span>✍️</span><div><div>מילה</div><div class="ss-label">Enter a word</div></div>
+        </button>
+      </div>
+
+      <div class="input-card">
+        <div class="tab-panel active" id="panelArticle">
+          <div class="input-label">קישור לכתבה</div>
+          <div class="url-row">
+            <input type="url" id="articleInput" placeholder="https://www.haaretz.co.il/..." dir="ltr" />
+            <button class="go-btn" id="analyzeArticleBtn" onclick="analyzeArticle()">נתח 🔍</button>
+          </div>
+          <p class="hint">Works with Haaretz, Ynet, Walla, Wikipedia, and most Hebrew news sites.</p>
         </div>
-        <div class="yt-preview" id="ytPreview">
-          <img class="yt-thumb" id="ytThumb" src="" alt="" />
-          <div><div class="yt-id" id="ytId"></div><div class="yt-sub">Local server connected ✅</div></div>
+        <div class="tab-panel" id="panelYoutube">
+          <div class="input-label">קישור לסרטון YouTube</div>
+          <div class="url-row">
+            <input type="text" id="ytInput" placeholder="https://www.youtube.com/watch?v=..." dir="ltr" oninput="onYtInput()" />
+            <button class="go-btn" id="analyzeYtBtn" onclick="analyzeYoutube()">נתח 🔍</button>
+          </div>
+          <div class="yt-preview" id="ytPreview">
+            <img class="yt-thumb" id="ytThumb" src="" alt="" />
+            <div><div class="yt-id" id="ytId"></div><div class="yt-sub">Local server connected ✅</div></div>
+          </div>
+          <p class="hint">⚙️ Requires local server: <code>py server.py</code></p>
         </div>
-        <p class="hint">⚙️ Requires local server: <code>py server.py</code></p>
+        <div class="tab-panel" id="panelWord">
+          <div class="input-label">הכנס מילה בעברית</div>
+          <div class="url-row">
+            <input type="text" id="wordInput" class="rtl-input" placeholder="לדוגמה: להתמודד, עמיד, מורכב..." dir="rtl" />
+            <button class="go-btn" id="analyzeWordBtn" onclick="analyzeWord()">נתח 🔍</button>
+          </div>
+          <p class="hint">הכנס מילה בעברית וקלוד ייצור עבורך משפט לדוגמה קצר ופשוט.</p>
+        </div>
+      </div>
+
+      <div class="error-box" id="errorBox"></div>
+      <div class="loading" id="loadingEl">
+        <div class="loader-dots"><span></span><span></span><span></span></div>
+        <p class="loading-text" id="loadingText">מעבד...</p>
+        <p class="loading-sub" id="loadingSub"></p>
+      </div>
+
+      <div class="results-header" id="resultsHeader">
+        <div class="results-title">מילים מתקדמות</div>
+        <span class="source-pill" id="sourceLabel"></span>
+      </div>
+      <div class="selection-bar" id="selectionBar">
+        <span class="sel-hint">☑️ בחר מילים לשמירה</span>
+        <span class="sel-count" id="selectionCount">0 נבחרו</span>
+        <button class="save-btn" id="saveSelectedBtn" onclick="saveSelected()" disabled>💾 שמור</button>
+      </div>
+      <div class="word-cards" id="wordCards">
+        <div class="empty-state"><div class="empty-icon">📖</div><p>הדבק קישור לכתבה, סרטון YouTube,<br>או הכנס מילה בעברית</p></div>
       </div>
     </div>
-    <div class="error-box" id="errorBox"></div>
-    <div class="loading" id="loadingEl">
-      <div class="loader-dots"><span></span><span></span><span></span></div>
-      <p class="loading-text" id="loadingText">מעבד...</p>
-      <p class="loading-sub" id="loadingSub"></p>
-    </div>
-    <div class="results-header" id="resultsHeader">
-      <div class="results-title">מילים מתקדמות</div>
-      <div class="source-label" id="sourceLabel"></div>
-    </div>
-    <div class="selection-bar" id="selectionBar">
-      <span class="selection-hint">☑️ בחר מילים לשמירה במילון שלי (מקסימום 4 במילון)</span>
-      <span class="selection-count" id="selectionCount">0 נבחרו</span>
-      <button class="save-selected-btn" id="saveSelectedBtn" onclick="saveSelected()" disabled>💾 שמור נבחרות</button>
-    </div>
-    <div class="word-cards" id="wordCards">
-      <div class="empty-state"><div class="empty-icon">📖</div><p>הדבק קישור לכתבה או לסרטון YouTube בעברית</p></div>
-    </div>
   </div>
+</div>
 
-  <!-- WORD BANK -->
-  <div class="page" id="pageBank">
-    <div class="wb-toolbar">
-      <input type="text" class="wb-search" id="wbSearch" placeholder="חפש מילה..." oninput="renderBank()" />
-      <span class="wb-count" id="wbCount"></span>
-    </div>
-    <div id="wbCards">
-      <div class="empty-state"><div class="empty-icon">📚</div><p>עדיין אין מילים שמורות.<br>נתח טקסט, בחר מילים ולחץ שמור.</p></div>
-    </div>
-  </div>
-
-  <!-- LEARNED -->
-  <div class="page" id="pageLearned">
+<!-- LEARNED PAGE -->
+<div class="page" id="pageLearned">
+  <div style="max-width:680px;margin:0 auto;padding:1.5rem 1.5rem 3rem;">
     <div class="wb-toolbar">
       <input type="text" class="wb-search" id="learnedSearch" placeholder="חפש מילה שלמדת..." oninput="renderLearned()" />
       <span class="wb-count" id="learnedCount"></span>
     </div>
     <div id="learnedCards">
-      <div class="empty-state"><div class="empty-icon">🎓</div><p>עדיין לא העברת מילים לכאן.<br>לחץ "למדתי ✓" על מילה במילון שלי.</p></div>
+      <div class="empty-state"><div class="empty-icon">🎓</div><p>עדיין לא העברת מילים לכאן.<br>לחץ "למדתי ✓" על מילה בסרגל הצד.</p></div>
     </div>
   </div>
-</main>
+</div>
+
+<!-- RESOURCES PAGE -->
+<div class="page" id="pageResources">
+  <div style="max-width:680px;margin:0 auto;padding:1.5rem 1.5rem 3rem;">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.25rem;flex-wrap:wrap;gap:0.75rem;">
+      <div>
+        <div style="font-family:'Frank Ruhl Libre',serif;font-size:1.3rem;font-weight:700;">🔗 משאבים מומלצים</div>
+        <div style="font-size:0.76rem;color:#9a8060;margin-top:0.2rem;direction:ltr;">Your saved YouTube channels and websites</div>
+      </div>
+      <button class="go-btn" onclick="openAddResource()" style="font-size:0.85rem;padding:0.55rem 1rem;">+ הוסף משאב</button>
+    </div>
+
+    <!-- Tabs for channels vs websites -->
+    <div style="display:flex;background:var(--warm);border-radius:10px;padding:3px;margin-bottom:1.25rem;border:1.5px solid var(--border);">
+      <button class="ss-btn active" id="resTabYt" onclick="switchResTab('youtube')" style="font-size:0.85rem;padding:0.5rem;">▶️ YouTube</button>
+      <button class="ss-btn" id="resTabWeb" onclick="switchResTab('web')" style="font-size:0.85rem;padding:0.5rem;">📰 אתרים</button>
+    </div>
+
+    <div id="resYoutubeList"></div>
+    <div id="resWebList" style="display:none;"></div>
+  </div>
+</div>
+
+<!-- ADD RESOURCE MODAL -->
+<div class="modal-overlay" id="addResModal">
+  <div class="modal" style="max-width:420px;">
+    <div class="modal-title" style="margin-bottom:0.5rem;">+ הוסף משאב</div>
+    <div style="margin-bottom:1.25rem;">
+      <div style="display:flex;background:var(--warm);border-radius:10px;padding:3px;margin-bottom:1rem;border:1.5px solid var(--border);">
+        <button class="ss-btn active" id="addResTabYt" onclick="switchAddResType('youtube')" style="font-size:0.85rem;padding:0.5rem;">▶️ YouTube</button>
+        <button class="ss-btn" id="addResTabWeb" onclick="switchAddResType('web')" style="font-size:0.85rem;padding:0.5rem;">📰 אתר</button>
+      </div>
+      <div style="margin-bottom:0.75rem;">
+        <label style="font-size:0.78rem;color:#9a8060;display:block;margin-bottom:0.35rem;">שם / כותרת</label>
+        <input type="text" id="resNameInput" placeholder="לדוגמה: כאן 11 חדשות" dir="rtl" style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid var(--border);border-radius:9px;font-size:0.88rem;font-family:'Heebo',sans-serif;background:var(--warm);color:var(--ink);outline:none;" />
+      </div>
+      <div style="margin-bottom:0.75rem;">
+        <label style="font-size:0.78rem;color:#9a8060;display:block;margin-bottom:0.35rem;" id="resUrlLabel">קישור לערוץ YouTube</label>
+        <input type="url" id="resUrlInput" placeholder="https://www.youtube.com/@..." dir="ltr" style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid var(--border);border-radius:9px;font-size:0.88rem;font-family:'Heebo',sans-serif;background:var(--warm);color:var(--ink);outline:none;" />
+      </div>
+      <div id="resDescRow" style="margin-bottom:0.75rem;display:none;">
+        <label style="font-size:0.78rem;color:#9a8060;display:block;margin-bottom:0.35rem;">תיאור קצר (אנגלית)</label>
+        <input type="text" id="resDescInput" placeholder="e.g. Israeli news website" dir="ltr" style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid var(--border);border-radius:9px;font-size:0.88rem;font-family:'Heebo',sans-serif;background:var(--warm);color:var(--ink);outline:none;" />
+      </div>
+    </div>
+    <div style="display:flex;gap:0.65rem;">
+      <button class="test-close-btn" onclick="closeAddResource()">ביטול</button>
+      <button class="go-btn" onclick="saveResource()" style="flex:1;">שמור</button>
+    </div>
+  </div>
+</div>
+
+<!-- TEST ME MODAL -->
+<div class="modal-overlay" id="testModal">
+  <div class="modal">
+    <div class="modal-title">🧪 בחן אותי</div>
+    <div class="modal-sub" id="testSub">מילים מהמילון שלי</div>
+    <div class="test-progress" id="testProgress"></div>
+    <div class="test-card" id="testCard">
+      <div class="test-translation" id="testTranslation"></div>
+      <div class="test-pos" id="testPos"></div>
+      <input type="text" class="test-input" id="testInput" placeholder="כתוב את המילה בעברית..." dir="rtl" onkeydown="if(event.key==='Enter')checkAnswer()" />
+      <div class="test-feedback" id="testFeedback"></div>
+    </div>
+    <div class="test-actions">
+      <button class="test-close-btn" onclick="closeTest()">סגור</button>
+      <button class="test-check-btn" id="testCheckBtn" onclick="checkAnswer()">בדוק ✓</button>
+      <button class="test-next-btn" id="testNextBtn" onclick="nextQuestion()">הבא ←</button>
+    </div>
+    <div class="test-score" id="testScore" style="display:none;margin-top:1rem;"></div>
+  </div>
+</div>
 
 <script>
-const SERVER = window.location.hostname === 'localhost' ? 'http://localhost:7779' : window.location.origin;
-let currentWords = [], currentSource = '', wordBank = [], learnedBank = [], selectedIndices = new Set();
+const SERVER = window.location.hostname==='localhost' ? 'http://localhost:7779' : window.location.origin;
+let currentWords=[], currentSource='', wordBank=[], learnedBank=[], selectedIndices=new Set();
+let testWords=[], testIndex=0, testCorrect=0, testAnswered=false;
 
 // ── SERVER ────────────────────────────────────────────────────────────────────
-let serverOk = false;
-async function checkServer() {
-  try { const r=await fetch(SERVER+'/health',{signal:AbortSignal.timeout(2000)}); serverOk=r.ok; } catch { serverOk=false; }
+let serverOk=false;
+async function checkServer(){
+  try{const r=await fetch(SERVER+'/health',{signal:AbortSignal.timeout(2000)});serverOk=r.ok;}catch{serverOk=false;}
   const b=document.getElementById('serverBanner');
-  if (serverOk) { b.className='server-banner ok'; b.textContent='✅  Local server is running — YouTube transcripts ready.'; }
-  else { b.className='server-banner err'; b.innerHTML='⚠️  Local server not detected. Run <code style="background:rgba(0,0,0,0.08);padding:1px 5px;border-radius:3px;font-family:monospace">py server.py</code> in your terminal.'; }
+  if(serverOk){b.className='server-banner ok';b.textContent='✅  Local server is running — YouTube transcripts ready.';}
+  else{b.className='server-banner err';b.innerHTML='⚠️  Local server not detected. Run <code>py server.py</code> for YouTube support.';}
 }
 checkServer();
 
 // ── NAVIGATION ────────────────────────────────────────────────────────────────
-function switchPage(p) {
-  [['analyze','Analyze'],['bank','Bank'],['learned','Learned']].forEach(([k,c])=>{
+function switchPage(p){
+  [['analyze','Analyze'],['learned','Learned'],['resources','Resources']].forEach(([k,c])=>{
     document.getElementById('nav'+c).classList.toggle('active',k===p);
     document.getElementById('page'+c).classList.toggle('active',k===p);
   });
-  if(p==='bank') renderBank();
-  if(p==='learned') renderLearned();
+  if(p==='learned')renderLearned();
+  if(p==='resources')renderResources();
 }
-function switchSource(s) {
-  ['article','youtube'].forEach(x=>{
-    document.getElementById('tab'+(x==='article'?'Article':'Youtube')).classList.toggle('active',x===s);
-    document.getElementById('panel'+(x==='article'?'Article':'Youtube')).classList.toggle('active',x===s);
+function switchSource(s){
+  [['article','Article'],['youtube','Youtube'],['word','Word']].forEach(([k,c])=>{
+    document.getElementById('tab'+c).classList.toggle('active',k===s);
+    document.getElementById('panel'+c).classList.toggle('active',k===s);
   });
   hideError();
-  if(s==='youtube') checkServer();
+  if(s==='youtube')checkServer();
 }
 
 // ── YOUTUBE ───────────────────────────────────────────────────────────────────
-function extractVideoId(url) {
-  try { const u=new URL(url); if(u.hostname.includes('youtu.be')) return u.pathname.slice(1).split('?')[0]; if(u.hostname.includes('youtube.com')) return u.searchParams.get('v'); } catch {} return null;
+function extractVideoId(url){
+  try{const u=new URL(url);if(u.hostname.includes('youtu.be'))return u.pathname.slice(1).split('?')[0];if(u.hostname.includes('youtube.com'))return u.searchParams.get('v');}catch{}return null;
 }
 let ytTimer=null;
-function onYtInput() {
+function onYtInput(){
   clearTimeout(ytTimer);
   ytTimer=setTimeout(()=>{
     const vid=extractVideoId(document.getElementById('ytInput').value.trim());
@@ -255,29 +431,33 @@ function showError(msg){const e=document.getElementById('errorBox');e.innerHTML=
 function hideError(){document.getElementById('errorBox').classList.remove('active');}
 function setLoading(on,text,sub){
   document.getElementById('loadingEl').classList.toggle('active',on);
-  document.getElementById('analyzeArticleBtn').disabled=on;
-  document.getElementById('analyzeYtBtn').disabled=on;
+  ['analyzeArticleBtn','analyzeYtBtn','analyzeWordBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=on;});
   if(text)document.getElementById('loadingText').textContent=text;
   document.getElementById('loadingSub').textContent=sub||'';
 }
-function highlightWord(sentence,word){
+function hl(sentence,word){
   const base=word.replace(/^(ל|ה|ו|ב|כ|מ|ש)/,'').replace(/[יה]$/,'');
   if(base.length<2)return sentence;
   try{return sentence.replace(new RegExp(`(${base}\\S*)`,'g'),'<span class="highlight">$1</span>');}catch{return sentence;}
 }
+function firstSentence(sentences){
+  if(!sentences||!sentences.length)return null;
+  // Return the shortest sentence
+  return sentences.reduce((a,b)=>(a.hebrew.length<=b.hebrew.length?a:b));
+}
 
 // ── SELECTION ─────────────────────────────────────────────────────────────────
-function toggleSelect(idx,cb) {
-  if(cb.checked) selectedIndices.add(idx); else selectedIndices.delete(idx);
+function toggleSelect(idx,cb){
+  if(cb.checked)selectedIndices.add(idx);else selectedIndices.delete(idx);
   document.querySelectorAll('.word-card').forEach((c,i)=>c.classList.toggle('selected',selectedIndices.has(i)));
   const n=selectedIndices.size;
   document.getElementById('selectionCount').textContent=n+' נבחרו';
   document.getElementById('saveSelectedBtn').disabled=n===0;
 }
 
-// ── RENDER ANALYSIS CARDS ─────────────────────────────────────────────────────
-function renderCards(words,sourceText) {
-  currentWords=words; currentSource=sourceText; selectedIndices.clear();
+// ── RENDER CARDS ──────────────────────────────────────────────────────────────
+function renderCards(words,sourceText){
+  currentWords=words;currentSource=sourceText;selectedIndices.clear();
   const container=document.getElementById('wordCards');
   container.innerHTML='';
   if(!words||!words.length){container.innerHTML='<div class="empty-state"><div class="empty-icon">🤔</div><p>לא נמצאו מילים מתקדמות</p></div>';document.getElementById('selectionBar').classList.remove('active');return;}
@@ -289,164 +469,370 @@ function renderCards(words,sourceText) {
   words.forEach((w,i)=>{
     const card=document.createElement('div');
     card.className='word-card';
-    const meta=[w.translation,w.partOfSpeech,w.root?'שורש: '+w.root:null].filter(Boolean).join(' · ');
+    const meta=[w.translation,w.partOfSpeech?`<span class="pill">${w.partOfSpeech}</span>`:'',w.root?`<span class="pill">שורש: ${w.root}</span>`:''].filter(Boolean).join(' ');
+    const s=firstSentence(w.sentences);
     card.innerHTML=`
-      <input type="checkbox" class="card-checkbox" id="chk${i}" onchange="toggleSelect(${i},this)"/>
-      <div style="font-size:0.8rem;color:#9a8860;direction:ltr;margin-bottom:0.6rem;padding-left:1.8rem;">${meta}</div>
-      ${(w.sentences||[]).map(s=>`<div class="sentence">${highlightWord(s.hebrew,w.word)}<div class="sentence-translation">${s.english}</div></div>`).join('')}`;
+      <input type="checkbox" class="card-check" id="chk${i}" onchange="toggleSelect(${i},this)"/>
+      <div class="card-meta">${meta}</div>
+      ${s?`<div class="sentence">${hl(s.hebrew,w.word)}<div class="sentence-en">${s.english}</div></div>`:''}`;
     container.appendChild(card);
   });
 }
 
-// ── SAVE SELECTED ─────────────────────────────────────────────────────────────
-async function saveSelected() {
-  if(selectedIndices.size===0) return;
+// ── SAVE ──────────────────────────────────────────────────────────────────────
+async function saveSelected(){
+  if(selectedIndices.size===0)return;
   if(wordBank.length>=4){showError('המילון שלי מלא (4 מילים).\nלחץ "למדתי ✓" על מילה כדי לפנות מקום.');return;}
   const btn=document.getElementById('saveSelectedBtn');
   const toSave=[...selectedIndices].map(i=>currentWords[i]);
-  btn.disabled=true; btn.textContent='שומר...';
-  try {
+  btn.disabled=true;btn.textContent='שומר...';
+  try{
     const r=await fetch(SERVER+'/wordbank/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words:toSave,source:currentSource})});
-    if(!r.ok) throw new Error('Server error '+r.status);
+    if(!r.ok)throw new Error('Server error '+r.status);
     btn.textContent='✅ נשמר!';
     selectedIndices.clear();
-    document.querySelectorAll('.card-checkbox').forEach(c=>c.checked=false);
+    document.querySelectorAll('.card-check').forEach(c=>c.checked=false);
     document.querySelectorAll('.word-card').forEach(c=>c.classList.remove('selected'));
     document.getElementById('selectionCount').textContent='0 נבחרו';
-    await loadWordBank();
-    setTimeout(()=>{btn.textContent='💾 שמור נבחרות';btn.disabled=false;},2500);
-  } catch(e){btn.disabled=false;btn.textContent='💾 שמור נבחרות';showError('שגיאה בשמירה: '+e.message);}
+    await loadWordBank();renderSidebar();
+    setTimeout(()=>{btn.textContent='💾 שמור';btn.disabled=false;},2000);
+  }catch(e){btn.disabled=false;btn.textContent='💾 שמור';showError('שגיאה בשמירה: '+e.message);}
 }
 
 // ── WORD BANK ─────────────────────────────────────────────────────────────────
-async function loadWordBank() {
+async function loadWordBank(){
   try{const r=await fetch(SERVER+'/wordbank');if(!r.ok)throw new Error();const d=await r.json();wordBank=d.entries||[];}catch{wordBank=[];}
-  document.getElementById('bankBadge').textContent=wordBank.length;
+}
+async function archiveWord(word){
+  const entry=wordBank.find(w=>w.word===word);if(!entry)return;
+  try{
+    const r1=await fetch(SERVER+'/learnedbank/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words:[entry],source:entry.source||''})});
+    if(!r1.ok)throw new Error('Save failed: '+r1.status);
+    const r2=await fetch(SERVER+'/wordbank/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word})});
+    if(!r2.ok)throw new Error('Delete failed: '+r2.status);
+    await loadWordBank();await loadLearnedBank();renderSidebar();
+  }catch(e){alert('שגיאה בהעברה: '+e.message);}
+}
+async function deleteWord(word){
+  try{await fetch(SERVER+'/wordbank/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word})});await loadWordBank();renderSidebar();}catch{alert('שגיאה במחיקה');}
 }
 
-async function archiveWord(word) {
-  const entry=wordBank.find(w=>w.word===word);
-  if(!entry) return;
-  try {
-    await fetch(SERVER+'/learnedbank/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words:[entry],source:entry.source||''})});
-    await fetch(SERVER+'/wordbank/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word})});
-    await loadWordBank(); await loadLearnedBank(); renderBank();
-  } catch{alert('שגיאה בהעברה');}
-}
-
-async function deleteWord(word) {
-  try{await fetch(SERVER+'/wordbank/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word})});await loadWordBank();renderBank();}catch{alert('שגיאה במחיקה');}
-}
-
-function renderBank() {
-  const q=(document.getElementById('wbSearch').value||'').trim().toLowerCase();
-  const filtered=q?wordBank.filter(w=>(w.word||'').includes(q)||(w.translation||'').toLowerCase().includes(q)):wordBank;
-  document.getElementById('wbCount').textContent=filtered.length+' מילים';
-  const container=document.getElementById('wbCards');
-  if(!filtered.length){container.innerHTML=wordBank.length===0?'<div class="empty-state"><div class="empty-icon">📚</div><p>עדיין אין מילים שמורות.<br>נתח טקסט, בחר מילים ולחץ שמור.</p></div>':'<div class="empty-state"><div class="empty-icon">🔍</div><p>לא נמצאו מילים</p></div>';return;}
-  container.innerHTML='';
-  filtered.forEach(w=>{
-    const card=document.createElement('div');
-    card.className='wb-card';
-    const safe=w.word.replace(/'/g,"\\'");
-    const meta=[w.translation,w.partOfSpeech,w.root?'שורש: '+w.root:null].filter(Boolean).join(' · ');
-    card.innerHTML=`
-      <div class="wb-actions">
-        <button class="btn-learned" onclick="archiveWord('${safe}')">למדתי ✓</button>
-        <button class="btn-delete" onclick="deleteWord('${safe}')">✕</button>
-      </div>
-      <div class="wb-meta">${meta}</div>
-      ${w.source?`<div class="wb-source">📌 ${w.source}${w.date?' · '+w.date:''}</div>`:''}
-      ${(w.sentences||[]).map(s=>`<div class="wb-sentence">${s.hebrew}<div class="wb-sentence-en">${s.english}</div></div>`).join('')}`;
-    container.appendChild(card);
-  });
+// ── SIDEBAR ───────────────────────────────────────────────────────────────────
+function renderSidebar(){
+  for(let i=0;i<4;i++){const s=document.getElementById('slot'+i);if(s)s.className='sb-slot'+(i<wordBank.length?' filled':'');}
+  document.getElementById('sbCount').textContent=wordBank.length+' / 4';
+  const container=document.getElementById('sbWords');
+  if(!wordBank.length){container.innerHTML='<div class="sidebar-empty">עדיין אין מילים שמורות</div>';}
+  else{
+    container.innerHTML='';
+    wordBank.forEach(w=>{
+      const card=document.createElement('div');card.className='sb-word-card';
+      const safe=w.word.replace(/'/g,"\\'");
+      const s=firstSentence(w.sentences);
+      card.innerHTML=`
+        <div class="sb-word">${w.word}</div>
+        <div class="sb-meta">${[w.translation,w.partOfSpeech].filter(Boolean).join(' · ')}</div>
+        ${s?`<div class="sb-sentence">${s.hebrew}<div class="sb-sentence-en">${s.english}</div></div>`:''}
+        <div class="sb-actions">
+          <button class="sb-btn-learned" onclick="archiveWord('${safe}')">למדתי ✓</button>
+          <button class="sb-btn-delete" onclick="deleteWord('${safe}')">✕</button>
+        </div>`;
+      container.appendChild(card);
+    });
+  }
+  const lCont=document.getElementById('sbLearned');
+  const recent=learnedBank.slice(-3).reverse();
+  if(!recent.length){lCont.innerHTML='<div class="sidebar-empty">לא למדת מילים עדיין</div>';}
+  else{
+    lCont.innerHTML='';
+    recent.forEach(w=>{
+      const card=document.createElement('div');card.className='sb-word-card';
+      card.style.cssText='border-right-color:#9a8060;opacity:0.72;';
+      card.innerHTML=`<div class="sb-word" style="font-size:1rem;">${w.word}</div><div class="sb-meta">${w.translation||''}${w.date?' · '+w.date:''}</div>`;
+      lCont.appendChild(card);
+    });
+  }
+  // Update test button
+  const allWords=[...wordBank,...learnedBank];
+  document.getElementById('testMeBtn').disabled=allWords.length===0;
 }
 
 // ── LEARNED BANK ──────────────────────────────────────────────────────────────
-async function loadLearnedBank() {
+async function loadLearnedBank(){
   try{const r=await fetch(SERVER+'/learnedbank');if(!r.ok)throw new Error();const d=await r.json();learnedBank=d.entries||[];}catch{learnedBank=[];}
   document.getElementById('learnedBadge').textContent=learnedBank.length;
 }
-
-function renderLearned() {
+function renderLearned(){
   const q=(document.getElementById('learnedSearch').value||'').trim().toLowerCase();
   const filtered=q?learnedBank.filter(w=>(w.word||'').includes(q)||(w.translation||'').toLowerCase().includes(q)):learnedBank;
   document.getElementById('learnedCount').textContent=filtered.length+' מילים';
   const container=document.getElementById('learnedCards');
-  if(!filtered.length){container.innerHTML=learnedBank.length===0?'<div class="empty-state"><div class="empty-icon">🎓</div><p>עדיין לא העברת מילים לכאן.<br>לחץ "למדתי ✓" על מילה במילון שלי.</p></div>':'<div class="empty-state"><div class="empty-icon">🔍</div><p>לא נמצאו מילים</p></div>';return;}
+  if(!filtered.length){container.innerHTML=learnedBank.length===0?'<div class="empty-state"><div class="empty-icon">🎓</div><p>עדיין לא העברת מילים לכאן.</p></div>':'<div class="empty-state"><div class="empty-icon">🔍</div><p>לא נמצאו מילים</p></div>';return;}
   container.innerHTML='';
-  filtered.forEach(w=>{
-    const card=document.createElement('div');
-    card.className='learned-card';
-    const meta=[w.translation,w.partOfSpeech,w.root?'שורש: '+w.root:null].filter(Boolean).join(' · ');
+  [...filtered].reverse().forEach(w=>{
+    const card=document.createElement('div');card.className='learned-card';
+    const meta=[w.translation,w.partOfSpeech,w.root?'שורש: '+w.root:null].filter(Boolean);
+    const s=firstSentence(w.sentences);
     card.innerHTML=`
-      <div class="wb-meta">${meta}</div>
-      ${w.source?`<div class="wb-source">📌 ${w.source}${w.date?' · '+w.date:''}</div>`:''}
-      ${(w.sentences||[]).map(s=>`<div class="wb-sentence">${s.hebrew}<div class="wb-sentence-en">${s.english}</div></div>`).join('')}`;
+      <div class="lc-meta">${meta.map(m=>`<span>${m}</span>`).join('<span style="opacity:0.3">·</span>')}</div>
+      ${w.source?`<div class="lc-source">📌 ${w.source}${w.date?' · '+w.date:''}</div>`:''}
+      ${s?`<div class="lc-sentence">${s.hebrew}<div class="lc-sentence-en">${s.english}</div></div>`:''}`;
     container.appendChild(card);
   });
 }
 
+// ── TEST ME ───────────────────────────────────────────────────────────────────
+function openTest(){
+  const allWords=[...wordBank,...learnedBank];
+  if(allWords.length===0){showError('אין מילים שמורות לבחינה. שמור קודם כמה מילים.');return;}
+  testWords=[...allWords].sort(()=>Math.random()-0.5);
+  testIndex=0;testCorrect=0;
+  document.getElementById('testScore').style.display='none';
+  document.getElementById('testModal').classList.add('active');
+  document.getElementById('testSub').textContent=`${testWords.length} מילים · כתוב את המילה בעברית`;
+  showTestQuestion();
+}
+function closeTest(){
+  document.getElementById('testModal').classList.remove('active');
+}
+function showTestQuestion(){
+  if(testIndex>=testWords.length){showTestResults();return;}
+  const w=testWords[testIndex];
+  testAnswered=false;
+  document.getElementById('testProgress').textContent=`${testIndex+1} / ${testWords.length}`;
+  document.getElementById('testTranslation').textContent=w.translation;
+  document.getElementById('testPos').textContent=w.partOfSpeech||'';
+  const inp=document.getElementById('testInput');
+  inp.value='';inp.className='test-input';inp.disabled=false;inp.focus();
+  document.getElementById('testFeedback').textContent='';
+  document.getElementById('testFeedback').className='test-feedback';
+  document.getElementById('testCheckBtn').style.display='';
+  document.getElementById('testNextBtn').style.display='none';
+}
+function checkAnswer(){
+  if(testAnswered)return;
+  const w=testWords[testIndex];
+  const answer=document.getElementById('testInput').value.trim();
+  if(!answer)return;
+  testAnswered=true;
+  // Flexible matching - strip vowels/niqqud and compare
+  const normalize=s=>s.replace(/[\u05B0-\u05C7]/g,'').trim();
+  const correct=normalize(w.word);
+  const given=normalize(answer);
+  const isCorrect=correct===given||w.word===answer;
+  const inp=document.getElementById('testInput');
+  const fb=document.getElementById('testFeedback');
+  if(isCorrect){
+    testCorrect++;
+    inp.className='test-input correct';
+    fb.textContent='✓ נכון!';fb.className='test-feedback correct';
+  }else{
+    inp.className='test-input wrong';
+    fb.textContent=`✗ התשובה הנכונה: ${w.word}`;fb.className='test-feedback wrong';
+  }
+  inp.disabled=true;
+  document.getElementById('testCheckBtn').style.display='none';
+  const nextBtn=document.getElementById('testNextBtn');
+  nextBtn.style.display='';
+  nextBtn.textContent=testIndex+1<testWords.length?'הבא ←':'סיים ✓';
+}
+function nextQuestion(){
+  testIndex++;
+  if(testIndex>=testWords.length){showTestResults();}
+  else{showTestQuestion();}
+}
+function showTestResults(){
+  document.getElementById('testCard').style.display='none';
+  document.getElementById('testCheckBtn').style.display='none';
+  document.getElementById('testNextBtn').style.display='none';
+  const score=document.getElementById('testScore');
+  score.style.display='block';
+  const pct=Math.round((testCorrect/testWords.length)*100);
+  const emoji=pct>=80?'🎉':pct>=50?'👍':'💪';
+  score.innerHTML=`${emoji} ענית נכון על <strong>${testCorrect}</strong> מתוך <strong>${testWords.length}</strong> מילים (${pct}%)`;
+  setTimeout(()=>document.getElementById('testCard').style.display='',100);
+}
+
 // ── CLAUDE ────────────────────────────────────────────────────────────────────
-async function analyzeWithClaude(text) {
+async function analyzeWithClaude(text){
   const r=await fetch(SERVER+'/analyze',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({text})});
   const data=await r.json();
-  if(data.error) throw new Error(data.error);
-  if(!data.words) throw new Error('לא ניתן לפענח את תשובת ה-AI');
+  if(data.error)throw new Error(data.error);
+  if(!data.words)throw new Error('לא ניתן לפענח את תשובת ה-AI');
   return data.words;
 }
 
 // ── ANALYZE ARTICLE ───────────────────────────────────────────────────────────
-async function analyzeArticle() {
+async function analyzeArticle(){
   const url=document.getElementById('articleInput').value.trim();
   if(!url){showError('אנא הדבק כתובת URL');return;}
-  hideError(); setLoading(true,'קורא את הכתבה...','');
+  hideError();setLoading(true,'קורא את הכתבה...','');
   document.getElementById('resultsHeader').classList.remove('active');
   document.getElementById('selectionBar').classList.remove('active');
   document.getElementById('wordCards').innerHTML='';
-  try {
+  try{
     let text='';
     try{const r=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);if(r.ok){const d=await r.json();const div=document.createElement('div');div.innerHTML=d.contents||'';text=div.innerText||div.textContent||'';}}catch{}
-    if(!text||text.trim().length<80) throw new Error('לא ניתן לטעון את הכתבה.\nנסה Wikipedia בעברית או אתר אחר.');
+    if(!text||text.trim().length<80)throw new Error('לא ניתן לטעון את הכתבה.\nנסה Wikipedia בעברית או אתר אחר.');
     setLoading(true,'מנתח מילים...','Claude מזהה מילים ברמה מתקדמת');
     const domain=(()=>{try{return new URL(url).hostname.replace('www.','');}catch{return '';}})();
-    const words=await analyzeWithClaude(text);
-    renderCards(words,domain);
-  } catch(e){showError(e.message||'אירעה שגיאה');}
+    renderCards(await analyzeWithClaude(text),domain);
+  }catch(e){showError(e.message||'אירעה שגיאה');}
   finally{setLoading(false);}
 }
 
 // ── ANALYZE YOUTUBE ───────────────────────────────────────────────────────────
-async function analyzeYoutube() {
+async function analyzeYoutube(){
   const url=document.getElementById('ytInput').value.trim();
   if(!url){showError('אנא הדבק קישור YouTube');return;}
-  const videoId=extractVideoId(url);
-  if(!videoId){showError('קישור YouTube לא תקין');return;}
+  const videoId=extractVideoId(url);if(!videoId){showError('קישור YouTube לא תקין');return;}
   await checkServer();
-  if(!serverOk){showError('השרת המקומי לא פועל.\n\nהרץ: py server.py בטרמינל ונסה שוב.');return;}
-  hideError(); setLoading(true,'מוריד כתוביות מ-YouTube...',videoId);
+  if(!serverOk){showError('השרת המקומי לא פועל.\n\nהרץ: py server.py');return;}
+  hideError();setLoading(true,'מוריד כתוביות מ-YouTube...',videoId);
   document.getElementById('resultsHeader').classList.remove('active');
   document.getElementById('selectionBar').classList.remove('active');
   document.getElementById('wordCards').innerHTML='';
-  try {
+  try{
     const r=await fetch(`${SERVER}/transcript?url=${encodeURIComponent(url)}`);
     const data=await r.json();
-    if(data.error) throw new Error(data.error);
-    if(!data.transcript) throw new Error('לא התקבל טקסט מהשרת');
+    if(data.error)throw new Error(data.error);
     setLoading(true,'מנתח מילים...',data.language||'Hebrew');
-    const words=await analyzeWithClaude(data.transcript);
-    renderCards(words,'YouTube · '+videoId);
-  } catch(e){showError(e.message+(e.message.includes('subtitle')||e.message.includes('כתוביות')?'\n\n💡 נסה ערוץ חדשות ישראלי.':''));}
+    renderCards(await analyzeWithClaude(data.transcript),'YouTube · '+videoId);
+  }catch(e){showError(e.message);}
   finally{setLoading(false);}
 }
 
-// ── ENTER KEY ─────────────────────────────────────────────────────────────────
+// ── ANALYZE WORD ──────────────────────────────────────────────────────────────
+async function analyzeWord(){
+  const word=document.getElementById('wordInput').value.trim();
+  if(!word){showError('אנא הכנס מילה בעברית');return;}
+  hideError();setLoading(true,'מייצר משפט לדוגמה...','');
+  document.getElementById('resultsHeader').classList.remove('active');
+  document.getElementById('selectionBar').classList.remove('active');
+  document.getElementById('wordCards').innerHTML='';
+  try{
+    renderCards(await analyzeWithClaude('__WORD__'+word),'מילה: '+word);
+  }catch(e){showError(e.message||'אירעה שגיאה');}
+  finally{setLoading(false);}
+}
+
+// ── ENTER KEYS ────────────────────────────────────────────────────────────────
 document.getElementById('articleInput').addEventListener('keydown',e=>{if(e.key==='Enter')analyzeArticle();});
 document.getElementById('ytInput').addEventListener('keydown',e=>{if(e.key==='Enter')analyzeYoutube();});
+document.getElementById('wordInput').addEventListener('keydown',e=>{if(e.key==='Enter')analyzeWord();});
+
+// ── RESOURCES ────────────────────────────────────────────────────────────────
+let resources = [];
+let currentResType = 'youtube';
+let addResType = 'youtube';
+
+async function loadResources(){
+  try{
+    const r=await fetch(SERVER+'/resources');
+    if(!r.ok)throw new Error();
+    const d=await r.json();
+    resources=d.entries||[];
+  }catch{
+    // Fall back to defaults if server doesn't have endpoint yet
+    resources=[
+      {type:'youtube',name:'כאן 11',url:'https://www.youtube.com/@kan11',desc:'Israeli public broadcaster'},
+      {type:'youtube',name:'N12 חדשות',url:'https://www.youtube.com/@N12News',desc:'Israeli news channel'},
+      {type:'web',name:'הארץ',url:'https://www.haaretz.co.il',desc:'Quality Hebrew journalism'},
+      {type:'web',name:'ויקיפדיה',url:'https://he.wikipedia.org',desc:'Hebrew Wikipedia'},
+    ];
+  }
+}
+
+function switchResTab(type){
+  currentResType=type;
+  document.getElementById('resTabYt').classList.toggle('active',type==='youtube');
+  document.getElementById('resTabWeb').classList.toggle('active',type==='web');
+  document.getElementById('resYoutubeList').style.display=type==='youtube'?'':'none';
+  document.getElementById('resWebList').style.display=type==='web'?'':'none';
+  renderResources();
+}
+
+function switchAddResType(type){
+  addResType=type;
+  document.getElementById('addResTabYt').classList.toggle('active',type==='youtube');
+  document.getElementById('addResTabWeb').classList.toggle('active',type==='web');
+  document.getElementById('resUrlLabel').textContent=type==='youtube'?'קישור לערוץ YouTube':'קישור לאתר';
+  document.getElementById('resUrlInput').placeholder=type==='youtube'?'https://www.youtube.com/@...':'https://www.haaretz.co.il';
+  document.getElementById('resDescRow').style.display=type==='web'?'':'none';
+}
+
+function renderResources(){
+  const ytList=document.getElementById('resYoutubeList');
+  const webList=document.getElementById('resWebList');
+  const ytItems=resources.filter(r=>r.type==='youtube');
+  const webItems=resources.filter(r=>r.type==='web');
+
+  [['youtube',ytList,ytItems,'▶️','No YouTube channels added yet.'],
+   ['web',webList,webItems,'📰','No websites added yet.']].forEach(([type,container,items,icon,emptyMsg])=>{
+    if(!items.length){
+      container.innerHTML=`<div class="empty-state" style="padding:2rem 1rem;"><div class="empty-icon">${icon}</div><p>${emptyMsg}<br><span style="font-size:0.85rem;">לחץ "+ הוסף משאב" למעלה</span></p></div>`;
+      return;
+    }
+    container.innerHTML='';
+    items.forEach((res,i)=>{
+      const globalIdx=resources.indexOf(res);
+      const isYt=res.type==='youtube';
+      // Try to get YouTube channel ID for thumbnail
+      let thumbHtml='';
+      if(isYt){
+        thumbHtml=`<div style="width:48px;height:48px;border-radius:50%;background:var(--rust);display:flex;align-items:center;justify-content:center;font-size:1.2rem;flex-shrink:0;">▶️</div>`;
+      }
+      const card=document.createElement('div');
+      card.style.cssText='background:var(--card);border-radius:12px;padding:1rem 1.25rem;box-shadow:var(--shadow-sm);border:1.5px solid var(--border);margin-bottom:0.75rem;display:flex;align-items:center;gap:1rem;';
+      card.innerHTML=`
+        ${thumbHtml}
+        <div style="flex:1;min-width:0;">
+          <div style="font-family:'Frank Ruhl Libre',serif;font-size:1.1rem;font-weight:700;margin-bottom:0.15rem;">${res.name}</div>
+          ${res.desc?`<div style="font-size:0.72rem;color:#9a8060;direction:ltr;margin-bottom:0.3rem;">${res.desc}</div>`:''}
+          <a href="${res.url}" target="_blank" style="font-size:0.72rem;color:var(--gold);direction:ltr;text-decoration:none;">${res.url}</a>
+        </div>
+        <div style="display:flex;flex-direction:column;gap:0.35rem;flex-shrink:0;">
+          <a href="${res.url}" target="_blank" style="padding:0.35rem 0.75rem;background:var(--gold);color:white;border-radius:7px;font-size:0.75rem;font-weight:600;text-decoration:none;text-align:center;">פתח</a>
+          <button onclick="deleteResource(${globalIdx})" style="padding:0.35rem 0.75rem;background:none;border:1px solid var(--border);border-radius:7px;font-size:0.75rem;color:#bbb;cursor:pointer;" onmouseover="this.style.color='var(--rust)'" onmouseout="this.style.color='#bbb'">מחק</button>
+        </div>`;
+      container.appendChild(card);
+    });
+  });
+}
+
+function openAddResource(){
+  document.getElementById('resNameInput').value='';
+  document.getElementById('resUrlInput').value='';
+  document.getElementById('resDescInput').value='';
+  switchAddResType('youtube');
+  document.getElementById('addResModal').classList.add('active');
+  setTimeout(()=>document.getElementById('resNameInput').focus(),100);
+}
+function closeAddResource(){
+  document.getElementById('addResModal').classList.remove('active');
+}
+async function saveResource(){
+  const name=document.getElementById('resNameInput').value.trim();
+  const url=document.getElementById('resUrlInput').value.trim();
+  const desc=document.getElementById('resDescInput').value.trim();
+  if(!name||!url){alert('אנא מלא שם וקישור');return;}
+  const entry={type:addResType,name,url,desc};
+  resources.push(entry);
+  // Try to save to server
+  try{
+    await fetch(SERVER+'/resources/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entries:resources})});
+  }catch{}
+  closeAddResource();
+  renderResources();
+}
+function deleteResource(idx){
+  resources.splice(idx,1);
+  try{fetch(SERVER+'/resources/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entries:resources})});}catch{}
+  renderResources();
+}
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
-loadWordBank();
-loadLearnedBank();
+(async()=>{await loadWordBank();await loadLearnedBank();await loadResources();renderSidebar();})();
 </script>
 </body>
 </html>

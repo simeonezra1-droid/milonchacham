@@ -20,6 +20,7 @@ HTML_FILE = os.path.join(BASE_DIR, "milonchacham.html")
 CONFIG_FILE = os.path.join(BASE_DIR, "config.json")
 WORDBANK_FILE = os.path.join(BASE_DIR, "wordbank.json")
 LEARNED_FILE = os.path.join(BASE_DIR, "learned.json")
+RESOURCES_FILE = os.path.join(BASE_DIR, "resources.json")
 
 # ─── API KEY ──────────────────────────────────────────────────────────────────
 def load_api_key():
@@ -68,6 +69,24 @@ def save_learned(entries):
     with open(LEARNED_FILE, 'w', encoding='utf-8') as f:
         json.dump(entries, f, ensure_ascii=False, indent=2)
 
+def load_resources():
+    if os.path.exists(RESOURCES_FILE):
+        try:
+            with open(RESOURCES_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except Exception:
+            pass
+    return {"entries": [
+        {"type":"youtube","name":"כאן 11","url":"https://www.youtube.com/@kan11","desc":"Israeli public broadcaster"},
+        {"type":"youtube","name":"N12 חדשות","url":"https://www.youtube.com/@N12News","desc":"Israeli news channel"},
+        {"type":"web","name":"הארץ","url":"https://www.haaretz.co.il","desc":"Quality Hebrew journalism"},
+        {"type":"web","name":"ויקיפדיה","url":"https://he.wikipedia.org","desc":"Hebrew Wikipedia"},
+    ]}
+
+def save_resources(data):
+    with open(RESOURCES_FILE, 'w', encoding='utf-8') as f:
+        json.dump(data, f, ensure_ascii=False, indent=2)
+
 # ─── YOUTUBE ──────────────────────────────────────────────────────────────────
 def extract_video_id(url_or_id):
     s = url_or_id.strip()
@@ -87,16 +106,17 @@ PROXY_PASSWORD = os.environ.get('WEBSHARE_PASS', 'y8o5s8o3jesk')
 PROXY_URL = f"http://{PROXY_USERNAME}:{PROXY_PASSWORD}@p.webshare.io:80"
 
 def make_api():
-    from youtube_transcript_api.proxies import WebshareProxyConfig
-    try:
-        return YouTubeTranscriptApi(proxy_config=WebshareProxyConfig(
-            proxy_username=PROXY_USERNAME,
-            proxy_password=PROXY_PASSWORD
-        ))
-    except Exception:
-        # Fall back to direct if proxy config not supported
-        proxies = {"http": PROXY_URL, "https": PROXY_URL}
-        return YouTubeTranscriptApi(proxies=proxies)
+    # On Railway use proxy, locally go direct
+    if os.environ.get('RAILWAY_ENVIRONMENT'):
+        try:
+            from youtube_transcript_api.proxies import WebshareProxyConfig
+            return YouTubeTranscriptApi(proxy_config=WebshareProxyConfig(
+                proxy_username=PROXY_USERNAME,
+                proxy_password=PROXY_PASSWORD
+            ))
+        except Exception:
+            pass
+    return YouTubeTranscriptApi()
 
 def get_hebrew_transcript(video_id):
     try:
@@ -141,11 +161,49 @@ CLAUDE_PROMPT = """You are a Hebrew language teacher helping an advanced-interme
 
 From the Hebrew text below, extract 8-12 words at B2/advanced-intermediate level — words a learner who knows everyday Hebrew might not know yet, but would encounter in news or media. Skip very basic words and hyper-technical jargon.
 
+For each word provide ONE short, simple example sentence (under 10 words in Hebrew). Choose the shortest, most everyday sentence possible.
+
 Return ONLY a valid JSON array, no markdown, no explanation:
-[{"word":"מילה","translation":"english (1-4 words)","root":"א-ב-ג or null","partOfSpeech":"noun/verb/adjective/adverb","sentences":[{"hebrew":"משפט פשוט.","english":"Simple sentence."},{"hebrew":"משפט שני.","english":"Second sentence."}]}]
+[{"word":"מילה","translation":"english (1-4 words)","root":"א-ב-ג or null","partOfSpeech":"noun/verb/adjective/adverb","sentences":[{"hebrew":"משפט קצר.","english":"Short sentence."}]}]
 
 Hebrew text:
 """
+
+WORD_PROMPT = """You are a Hebrew language teacher.
+
+The user has provided a single Hebrew word. Generate ONE short, simple everyday example sentence (under 10 words) using this word. Return it in JSON array format.
+
+Return ONLY a valid JSON array, no markdown, no explanation:
+[{"word":"המילה","translation":"english translation","root":"שורש or null","partOfSpeech":"noun/verb/adjective/adverb","sentences":[{"hebrew":"משפט קצר.","english":"Short sentence."}]}]
+
+Hebrew word: 
+"""
+
+def call_claude_word(word):
+    if not API_KEY:
+        raise ValueError("No Anthropic API key configured.")
+    payload = json.dumps({
+        "model": "claude-sonnet-4-5",
+        "max_tokens": 500,
+        "messages": [{"role": "user", "content": WORD_PROMPT + word}]
+    }).encode("utf-8")
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "x-api-key": API_KEY,
+            "anthropic-version": "2023-06-01"
+        },
+        method="POST"
+    )
+    with urllib.request.urlopen(req, timeout=60) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+    raw = "".join(b.get("text","") for b in data.get("content",[]) if b.get("type")=="text")
+    match = re.search(r'\[[\s\S]*\]', raw)
+    if not match:
+        raise ValueError("No JSON found in Claude response")
+    return json.loads(match.group(0))
 
 def call_claude(hebrew_text):
     if not API_KEY:
@@ -242,6 +300,10 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, {"entries": load_learned()})
             return
 
+        if parsed.path == "/resources":
+            self.send_json(200, load_resources())
+            return
+
         self.send_json(404, {"error": "Unknown endpoint"})
 
     def do_POST(self):
@@ -256,7 +318,11 @@ class Handler(BaseHTTPRequestHandler):
                 return
             print(f"  🧠 Analyzing {len(text)} chars with Claude...")
             try:
-                words = call_claude(text)
+                if text.startswith('__WORD__'):
+                    word = text[8:].strip()
+                    words = call_claude_word(word)
+                else:
+                    words = call_claude(text)
                 self.send_json(200, {"words": words})
             except Exception as e:
                 self.send_json(500, {"error": f"Claude API error: {e}"})
@@ -297,6 +363,37 @@ class Handler(BaseHTTPRequestHandler):
             self.send_json(200, {"total": len(bank)})
             return
 
+        if parsed.path == "/learnedbank/save":
+            words = body.get("words", [])
+            source = body.get("source", "")
+            learned = load_learned()
+            existing = {e["word"] for e in learned}
+            added = 0
+            for w in words:
+                if w.get("word") and w["word"] not in existing:
+                    w["source"] = source
+                    w["date"] = datetime.datetime.now().strftime("%Y-%m-%d")
+                    learned.append(w)
+                    existing.add(w["word"])
+                    added += 1
+            save_learned(learned)
+            self.send_json(200, {"saved": added, "total": len(learned)})
+            return
+
+        if parsed.path == "/learnedbank/delete":
+            word = body.get("word", "")
+            learned = load_learned()
+            learned = [e for e in learned if e.get("word") != word]
+            save_learned(learned)
+            self.send_json(200, {"total": len(learned)})
+            return
+
+        if parsed.path == "/resources/save":
+            entries = body.get("entries", [])
+            save_resources({"entries": entries})
+            self.send_json(200, {"saved": len(entries)})
+            return
+
         self.send_json(404, {"error": "Unknown endpoint"})
 
 
@@ -310,6 +407,8 @@ if __name__ == "__main__":
 """)
     httpd = HTTPServer(("0.0.0.0", PORT), Handler)
 
+    if not os.environ.get("RAILWAY_ENVIRONMENT"):
+        threading.Timer(1.2, lambda: webbrowser.open(f"http://localhost:{PORT}")).start()
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
