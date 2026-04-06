@@ -172,11 +172,56 @@
   .test-progress{font-size:0.75rem;color:#9a8060;text-align:center;margin-bottom:1rem;}
   .test-score{font-family:'Frank Ruhl Libre',serif;font-size:1.1rem;text-align:center;margin-bottom:1rem;}
 
+  /* ── DESKTOP only ── */
+  @media(min-width:701px){
+    .mobile-tabs { display: none !important; }
+    .mobile-page { display: block !important; }
+  }
+
+  /* ── MOBILE ── */
   @media(max-width:700px){
-    .app-layout{grid-template-columns:1fr;display:flex;flex-direction:column;}
-    .sidebar{position:static;height:auto;border-left:none;border-top:2px solid var(--border);}
-    header{padding:0.85rem 1rem;}
-    .header-left{flex-wrap:wrap;gap:0.75rem;}
+    /* Hide desktop layout elements */
+    .app-layout { display: none !important; }
+    header { padding: 0.75rem 1rem; position: sticky; top: 0; z-index: 100; }
+    .header-left { flex-wrap: wrap; gap: 0.5rem; width: 100%; }
+    .header-nav { display: none; }
+    .test-btn { font-size: 0.8rem; padding: 0.38rem 0.75rem; }
+
+    /* Mobile tab bar at bottom */
+    .mobile-tabs {
+      display: flex;
+      position: fixed;
+      bottom: 0; left: 0; right: 0;
+      background: var(--card);
+      border-top: 2px solid var(--gold);
+      z-index: 200;
+      box-shadow: 0 -4px 16px rgba(26,18,8,0.1);
+    }
+    .mob-tab {
+      flex: 1; padding: 0.6rem 0.25rem 0.5rem;
+      border: none; background: transparent;
+      display: flex; flex-direction: column; align-items: center; gap: 0.2rem;
+      cursor: pointer; transition: background 0.15s;
+      font-family: 'Frank Ruhl Libre', serif;
+      color: #9a8060;
+    }
+    .mob-tab.active { color: var(--gold); }
+    .mob-tab .mob-icon { font-size: 1.3rem; }
+    .mob-tab .mob-label { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.03em; }
+    .mob-tab .mob-badge {
+      background: var(--gold); color: white;
+      font-size: 0.6rem; padding: 0 5px; border-radius: 8px;
+      font-weight: 700; min-width: 16px; text-align: center;
+      position: absolute; top: 6px; right: calc(50% - 18px);
+    }
+    .mob-tab { position: relative; }
+
+    /* Mobile pages */
+    .mobile-page { display: none; padding: 1rem 1rem 5rem; }
+    .mobile-page.active { display: block; }
+
+    /* Hide desktop pages on mobile */
+    .page { display: none !important; }
   }
 </style>
 </head>
@@ -836,6 +881,316 @@ function deleteResource(idx){
 
 // ── INIT ──────────────────────────────────────────────────────────────────────
 (async()=>{await loadWordBank();await loadLearnedBank();await loadResources();renderSidebar();})();
+</script>
+
+<!-- ══ MOBILE LAYOUT ══════════════════════════════════════════════════════ -->
+
+<!-- Mobile Page 1: Search -->
+<div class="mobile-page active" id="mobPageSearch">
+  <div class="server-banner" id="mobServerBanner"></div>
+
+  <div class="source-switcher" style="margin-bottom:1rem;">
+    <button class="ss-btn active" id="mobTabArticle" onclick="switchMobSource('article')">
+      <span>📰</span><div><div>כתבה</div></div>
+    </button>
+    <button class="ss-btn" id="mobTabYoutube" onclick="switchMobSource('youtube')">
+      <span>▶️</span><div><div>YouTube</div></div>
+    </button>
+    <button class="ss-btn" id="mobTabWord" onclick="switchMobSource('word')">
+      <span>✍️</span><div><div>מילה</div></div>
+    </button>
+  </div>
+
+  <div class="input-card">
+    <div class="tab-panel active" id="mobPanelArticle">
+      <div class="input-label">קישור לכתבה</div>
+      <div class="url-row">
+        <input type="url" id="mobArticleInput" placeholder="https://www.ynet.co.il/..." dir="ltr" />
+        <button class="go-btn" id="mobAnalyzeArticleBtn" onclick="mobAnalyzeArticle()">נתח</button>
+      </div>
+    </div>
+    <div class="tab-panel" id="mobPanelYoutube">
+      <div class="input-label">קישור YouTube</div>
+      <div class="url-row">
+        <input type="text" id="mobYtInput" placeholder="https://www.youtube.com/watch?v=..." dir="ltr" oninput="onMobYtInput()" />
+        <button class="go-btn" id="mobAnalyzeYtBtn" onclick="mobAnalyzeYoutube()">נתח</button>
+      </div>
+      <div class="yt-preview" id="mobYtPreview">
+        <img class="yt-thumb" id="mobYtThumb" src="" alt="" />
+        <div><div class="yt-id" id="mobYtId"></div></div>
+      </div>
+    </div>
+    <div class="tab-panel" id="mobPanelWord">
+      <div class="input-label">הכנס מילה</div>
+      <div class="url-row">
+        <input type="text" id="mobWordInput" class="rtl-input" placeholder="לדוגמה: להתמודד..." dir="rtl" />
+        <button class="go-btn" id="mobAnalyzeWordBtn" onclick="mobAnalyzeWord()">נתח</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="error-box" id="mobErrorBox"></div>
+  <div class="loading" id="mobLoadingEl">
+    <div class="loader-dots"><span></span><span></span><span></span></div>
+    <p class="loading-text" id="mobLoadingText">מעבד...</p>
+  </div>
+
+  <div class="results-header" id="mobResultsHeader" style="display:none;">
+    <div class="results-title">מילים מתקדמות</div>
+    <span class="source-pill" id="mobSourceLabel"></span>
+  </div>
+  <div class="selection-bar" id="mobSelectionBar" style="display:none;">
+    <span class="sel-hint">☑️ בחר מילים לשמירה</span>
+    <span class="sel-count" id="mobSelCount">0 נבחרו</span>
+    <button class="save-btn" id="mobSaveBtn" onclick="mobSaveSelected()" disabled>💾 שמור</button>
+  </div>
+  <div class="word-cards" id="mobWordCards">
+    <div class="empty-state"><div class="empty-icon">📖</div><p>הדבק קישור או הכנס מילה</p></div>
+  </div>
+</div>
+
+<!-- Mobile Page 2: Current Words -->
+<div class="mobile-page" id="mobPageWords">
+  <div style="margin-bottom:1rem;">
+    <div style="font-family:'Frank Ruhl Libre',serif;font-size:1.2rem;font-weight:700;margin-bottom:0.25rem;">המילים שלי</div>
+    <div class="sb-slots" style="margin-bottom:0;">
+      <div class="sb-slot" id="mobSlot0"></div><div class="sb-slot" id="mobSlot1"></div>
+      <div class="sb-slot" id="mobSlot2"></div><div class="sb-slot" id="mobSlot3"></div>
+    </div>
+  </div>
+  <div id="mobSbWords"><div class="empty-state"><div class="empty-icon">📚</div><p>עדיין אין מילים שמורות</p></div></div>
+</div>
+
+<!-- Mobile Page 3: Learned Words -->
+<div class="mobile-page" id="mobPageLearned">
+  <div class="wb-toolbar">
+    <input type="text" class="wb-search" id="mobLearnedSearch" placeholder="חפש מילה שלמדת..." oninput="renderMobLearned()" />
+    <span class="wb-count" id="mobLearnedCount"></span>
+  </div>
+  <div id="mobLearnedCards">
+    <div class="empty-state"><div class="empty-icon">🎓</div><p>עדיין לא למדת מילים</p></div>
+  </div>
+</div>
+
+<!-- Mobile Bottom Tab Bar -->
+<div class="mobile-tabs">
+  <button class="mob-tab active" id="mobNavSearch" onclick="switchMobPage('search')">
+    <span class="mob-icon">🔍</span>
+    <span class="mob-label">חפש</span>
+  </button>
+  <button class="mob-tab" id="mobNavWords" onclick="switchMobPage('words')">
+    <span class="mob-icon">📚</span>
+    <span class="mob-label">מילים שלי</span>
+    <span class="mob-badge" id="mobBadgeWords">0</span>
+  </button>
+  <button class="mob-tab" id="mobNavLearned" onclick="switchMobPage('learned')">
+    <span class="mob-icon">🎓</span>
+    <span class="mob-label">למדתי</span>
+    <span class="mob-badge" id="mobBadgeLearned" style="display:none">0</span>
+  </button>
+</div>
+
+<script>
+// ── MOBILE JS ─────────────────────────────────────────────────────────────────
+const isMobile = () => window.innerWidth <= 700;
+
+function switchMobPage(p){
+  ['search','words','learned'].forEach(x=>{
+    const cap=x.charAt(0).toUpperCase()+x.slice(1);
+    document.getElementById('mobNav'+cap).classList.toggle('active',x===p);
+    document.getElementById('mobPage'+cap).classList.toggle('active',x===p);
+  });
+  if(p==='words')renderMobSidebar();
+  if(p==='learned')renderMobLearned();
+}
+
+function switchMobSource(s){
+  [['article','Article'],['youtube','Youtube'],['word','Word']].forEach(([k,c])=>{
+    document.getElementById('mobTab'+c).classList.toggle('active',k===s);
+    document.getElementById('mobPanel'+c).classList.toggle('active',k===s);
+  });
+  document.getElementById('mobErrorBox').classList.remove('active');
+}
+
+let mobYtTimer=null;
+function onMobYtInput(){
+  clearTimeout(mobYtTimer);
+  mobYtTimer=setTimeout(()=>{
+    const vid=extractVideoId(document.getElementById('mobYtInput').value.trim());
+    const p=document.getElementById('mobYtPreview');
+    if(!vid){p.classList.remove('visible');return;}
+    document.getElementById('mobYtThumb').src=`https://img.youtube.com/vi/${vid}/mqdefault.jpg`;
+    document.getElementById('mobYtId').textContent='youtube.com/watch?v='+vid;
+    p.classList.add('visible');
+  },350);
+}
+
+function mobSetLoading(on,text){
+  document.getElementById('mobLoadingEl').classList.toggle('active',on);
+  ['mobAnalyzeArticleBtn','mobAnalyzeYtBtn','mobAnalyzeWordBtn'].forEach(id=>{const el=document.getElementById(id);if(el)el.disabled=on;});
+  if(text)document.getElementById('mobLoadingText').textContent=text;
+}
+
+let mobCurrentWords=[], mobCurrentSource='', mobSelectedIndices=new Set();
+
+function mobToggleSelect(idx,cb){
+  if(cb.checked)mobSelectedIndices.add(idx);else mobSelectedIndices.delete(idx);
+  document.querySelectorAll('#mobWordCards .word-card').forEach((c,i)=>c.classList.toggle('selected',mobSelectedIndices.has(i)));
+  document.getElementById('mobSelCount').textContent=mobSelectedIndices.size+' נבחרו';
+  document.getElementById('mobSaveBtn').disabled=mobSelectedIndices.size===0;
+}
+
+function renderMobCards(words,sourceText){
+  mobCurrentWords=words;mobCurrentSource=sourceText;mobSelectedIndices.clear();
+  const container=document.getElementById('mobWordCards');
+  container.innerHTML='';
+  if(!words||!words.length){container.innerHTML='<div class="empty-state"><div class="empty-icon">🤔</div><p>לא נמצאו מילים</p></div>';
+    document.getElementById('mobSelectionBar').style.display='none';
+    document.getElementById('mobResultsHeader').style.display='none';
+    return;
+  }
+  document.getElementById('mobResultsHeader').style.display='flex';
+  document.getElementById('mobSourceLabel').textContent=sourceText||'';
+  document.getElementById('mobSelectionBar').style.display='flex';
+  document.getElementById('mobSelCount').textContent='0 נבחרו';
+  document.getElementById('mobSaveBtn').disabled=true;
+  words.forEach((w,i)=>{
+    const card=document.createElement('div');card.className='word-card';
+    const meta=[w.translation,w.partOfSpeech?`<span class="pill">${w.partOfSpeech}</span>`:''].filter(Boolean).join(' ');
+    const s=firstSentence(w.sentences);
+    card.innerHTML=`
+      <input type="checkbox" class="card-check" id="mobchk${i}" onchange="mobToggleSelect(${i},this)"/>
+      <div class="card-meta">${meta}</div>
+      ${s?`<div class="sentence">${hl(s.hebrew,w.word)}<div class="sentence-en">${s.english}</div></div>`:''}`;
+    container.appendChild(card);
+  });
+}
+
+async function mobSaveSelected(){
+  if(mobSelectedIndices.size===0)return;
+  if(wordBank.length>=4){document.getElementById('mobErrorBox').innerHTML='המילון מלא. לחץ "למדתי" על מילה כדי לפנות מקום.';document.getElementById('mobErrorBox').classList.add('active');return;}
+  const btn=document.getElementById('mobSaveBtn');
+  const toSave=[...mobSelectedIndices].map(i=>mobCurrentWords[i]);
+  btn.disabled=true;btn.textContent='שומר...';
+  try{
+    const r=await fetch(SERVER+'/wordbank/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words:toSave,source:mobCurrentSource})});
+    if(!r.ok)throw new Error();
+    btn.textContent='✅ נשמר!';
+    mobSelectedIndices.clear();
+    document.querySelectorAll('#mobWordCards .card-check').forEach(c=>c.checked=false);
+    document.querySelectorAll('#mobWordCards .word-card').forEach(c=>c.classList.remove('selected'));
+    document.getElementById('mobSelCount').textContent='0 נבחרו';
+    await loadWordBank();renderMobSidebar();
+    setTimeout(()=>{btn.textContent='💾 שמור';btn.disabled=false;},2000);
+  }catch{btn.disabled=false;btn.textContent='💾 שמור';}
+}
+
+function renderMobSidebar(){
+  for(let i=0;i<4;i++){const s=document.getElementById('mobSlot'+i);if(s)s.className='sb-slot'+(i<wordBank.length?' filled':'');}
+  document.getElementById('mobBadgeWords').textContent=wordBank.length;
+  const container=document.getElementById('mobSbWords');
+  if(!wordBank.length){container.innerHTML='<div class="empty-state"><div class="empty-icon">📚</div><p>עדיין אין מילים שמורות</p></div>';return;}
+  container.innerHTML='';
+  wordBank.forEach(w=>{
+    const card=document.createElement('div');card.className='sb-word-card';
+    const safe=w.word.replace(/'/g,"\\'");
+    const s=firstSentence(w.sentences);
+    card.innerHTML=`
+      <div class="sb-word">${w.word}</div>
+      <div class="sb-meta">${[w.translation,w.partOfSpeech].filter(Boolean).join(' · ')}</div>
+      ${s?`<div class="sb-sentence">${s.hebrew}<div class="sb-sentence-en">${s.english}</div></div>`:''}
+      <div class="sb-actions">
+        <button class="sb-btn-learned" onclick="archiveWord('${safe}');renderMobSidebar();">למדתי ✓</button>
+        <button class="sb-btn-delete" onclick="deleteWord('${safe}');renderMobSidebar();">✕</button>
+      </div>`;
+    container.appendChild(card);
+  });
+}
+
+function renderMobLearned(){
+  const q=(document.getElementById('mobLearnedSearch').value||'').trim().toLowerCase();
+  const filtered=q?learnedBank.filter(w=>(w.word||'').includes(q)||(w.translation||'').toLowerCase().includes(q)):learnedBank;
+  document.getElementById('mobLearnedCount').textContent=filtered.length+' מילים';
+  const badge=document.getElementById('mobBadgeLearned');
+  badge.textContent=learnedBank.length;
+  badge.style.display=learnedBank.length?'':'none';
+  const container=document.getElementById('mobLearnedCards');
+  if(!filtered.length){container.innerHTML=learnedBank.length===0?'<div class="empty-state"><div class="empty-icon">🎓</div><p>עדיין לא העברת מילים לכאן</p></div>':'<div class="empty-state"><div class="empty-icon">🔍</div><p>לא נמצאו מילים</p></div>';return;}
+  container.innerHTML='';
+  [...filtered].reverse().forEach(w=>{
+    const card=document.createElement('div');card.className='learned-card';
+    const s=firstSentence(w.sentences);
+    card.innerHTML=`
+      <div class="lc-meta"><span>${w.translation||''}</span>${w.partOfSpeech?`<span style="opacity:0.4">·</span><span>${w.partOfSpeech}</span>`:''}</div>
+      ${s?`<div class="lc-sentence">${s.hebrew}<div class="lc-sentence-en">${s.english}</div></div>`:''}`;
+    container.appendChild(card);
+  });
+}
+
+// Mobile analyze functions - reuse server logic
+async function mobAnalyzeArticle(){
+  const url=document.getElementById('mobArticleInput').value.trim();
+  if(!url){document.getElementById('mobErrorBox').innerHTML='אנא הדבק כתובת URL';document.getElementById('mobErrorBox').classList.add('active');return;}
+  document.getElementById('mobErrorBox').classList.remove('active');
+  mobSetLoading(true,'קורא את הכתבה...');
+  document.getElementById('mobResultsHeader').style.display='none';
+  document.getElementById('mobSelectionBar').style.display='none';
+  document.getElementById('mobWordCards').innerHTML='';
+  try{
+    const fetchRes=await fetch(`${SERVER}/fetch-article?url=${encodeURIComponent(url)}`);
+    const fetchData=await fetchRes.json();
+    if(fetchData.error)throw new Error(fetchData.error);
+    mobSetLoading(true,'מנתח מילים...');
+    const domain=(()=>{try{return new URL(url).hostname.replace('www.','');}catch{return '';}})();
+    renderMobCards(await analyzeWithClaude(fetchData.text),domain);
+  }catch(e){document.getElementById('mobErrorBox').innerHTML=e.message;document.getElementById('mobErrorBox').classList.add('active');}
+  finally{mobSetLoading(false);}
+}
+
+async function mobAnalyzeYoutube(){
+  const url=document.getElementById('mobYtInput').value.trim();
+  if(!url)return;
+  const videoId=extractVideoId(url);if(!videoId)return;
+  document.getElementById('mobErrorBox').classList.remove('active');
+  mobSetLoading(true,'מוריד כתוביות...');
+  document.getElementById('mobResultsHeader').style.display='none';
+  document.getElementById('mobSelectionBar').style.display='none';
+  document.getElementById('mobWordCards').innerHTML='';
+  try{
+    const r=await fetch(`${SERVER}/transcript?url=${encodeURIComponent(url)}`);
+    const data=await r.json();
+    if(data.error)throw new Error(data.error);
+    mobSetLoading(true,'מנתח מילים...');
+    renderMobCards(await analyzeWithClaude(data.transcript),'YouTube · '+videoId);
+  }catch(e){document.getElementById('mobErrorBox').innerHTML=e.message;document.getElementById('mobErrorBox').classList.add('active');}
+  finally{mobSetLoading(false);}
+}
+
+async function mobAnalyzeWord(){
+  const word=document.getElementById('mobWordInput').value.trim();
+  if(!word)return;
+  document.getElementById('mobErrorBox').classList.remove('active');
+  mobSetLoading(true,'מייצר משפט...');
+  document.getElementById('mobResultsHeader').style.display='none';
+  document.getElementById('mobSelectionBar').style.display='none';
+  document.getElementById('mobWordCards').innerHTML='';
+  try{
+    renderMobCards(await analyzeWithClaude('__WORD__'+word),'מילה: '+word);
+  }catch(e){document.getElementById('mobErrorBox').innerHTML=e.message;document.getElementById('mobErrorBox').classList.add('active');}
+  finally{mobSetLoading(false);}
+}
+
+// Enter keys for mobile
+document.getElementById('mobArticleInput').addEventListener('keydown',e=>{if(e.key==='Enter')mobAnalyzeArticle();});
+document.getElementById('mobYtInput').addEventListener('keydown',e=>{if(e.key==='Enter')mobAnalyzeYoutube();});
+document.getElementById('mobWordInput').addEventListener('keydown',e=>{if(e.key==='Enter')mobAnalyzeWord();});
+
+// Hook into existing loadWordBank/loadLearnedBank to update mobile UI too
+const _origRenderSidebar = renderSidebar;
+function renderSidebar(){
+  _origRenderSidebar();
+  if(isMobile())renderMobSidebar();
+}
 </script>
 </body>
 </html>
