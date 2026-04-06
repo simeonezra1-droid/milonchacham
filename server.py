@@ -87,6 +87,45 @@ def save_resources(data):
     with open(RESOURCES_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, ensure_ascii=False, indent=2)
 
+# ─── ARTICLE FETCH ────────────────────────────────────────────────────────────
+def fetch_article_text(url):
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'he,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate',
+        'Referer': 'https://www.google.com/',
+    }
+    req = urllib.request.Request(url, headers=headers)
+    try:
+        with urllib.request.urlopen(req, timeout=15) as resp:
+            raw = resp.read()
+            # Try to detect encoding
+            content_type = resp.headers.get('Content-Type', '')
+            encoding = 'utf-8'
+            if 'charset=' in content_type:
+                encoding = content_type.split('charset=')[-1].strip().split(';')[0]
+            try:
+                html = raw.decode(encoding, errors='replace')
+            except Exception:
+                html = raw.decode('utf-8', errors='replace')
+    except Exception as e:
+        # Try with http if https fails
+        if url.startswith('https://'):
+            return fetch_article_text(url.replace('https://', 'http://', 1))
+        raise e
+
+    # Strip HTML tags and extract text
+    import html as html_module
+    # Remove scripts, styles, nav elements
+    import re as re_mod
+    html = re_mod.sub(r'<(script|style|nav|header|footer|aside)[^>]*>[\s\S]*?</>', ' ', html, flags=re_mod.IGNORECASE)
+    html = re_mod.sub(r'<[^>]+>', ' ', html)
+    html = html_module.unescape(html)
+    # Clean whitespace
+    text = ' '.join(html.split())
+    return text
+
 # ─── YOUTUBE ──────────────────────────────────────────────────────────────────
 def extract_video_id(url_or_id):
     s = url_or_id.strip()
@@ -298,6 +337,22 @@ class Handler(BaseHTTPRequestHandler):
 
         if parsed.path == "/learnedbank":
             self.send_json(200, {"entries": load_learned()})
+            return
+
+        if parsed.path == "/fetch-article":
+            qs = parse_qs(parsed.query)
+            url = (qs.get("url") or [None])[0]
+            if not url:
+                self.send_json(400, {"error": "Missing ?url= parameter"})
+                return
+            try:
+                text = fetch_article_text(url)
+                if len(text) < 100:
+                    self.send_json(422, {"error": "Not enough text found on this page."})
+                    return
+                self.send_json(200, {"text": text[:8000], "length": len(text)})
+            except Exception as e:
+                self.send_json(422, {"error": f"Could not fetch article: {e}"})
             return
 
         if parsed.path == "/resources":

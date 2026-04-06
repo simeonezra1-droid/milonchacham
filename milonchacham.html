@@ -671,9 +671,12 @@ async function analyzeArticle(){
   document.getElementById('selectionBar').classList.remove('active');
   document.getElementById('wordCards').innerHTML='';
   try{
-    let text='';
-    try{const r=await fetch(`https://api.allorigins.win/get?url=${encodeURIComponent(url)}`);if(r.ok){const d=await r.json();const div=document.createElement('div');div.innerHTML=d.contents||'';text=div.innerText||div.textContent||'';}}catch{}
-    if(!text||text.trim().length<80)throw new Error('לא ניתן לטעון את הכתבה.\nנסה Wikipedia בעברית או אתר אחר.');
+    // Fetch via server to avoid CORS issues with news sites
+    const fetchRes=await fetch(`${SERVER}/fetch-article?url=${encodeURIComponent(url)}`);
+    const fetchData=await fetchRes.json();
+    if(fetchData.error)throw new Error(fetchData.error);
+    const text=fetchData.text||'';
+    if(!text||text.trim().length<80)throw new Error('לא נמצא טקסט מספיק בדף זה.');
     setLoading(true,'מנתח מילים...','Claude מזהה מילים ברמה מתקדמת');
     const domain=(()=>{try{return new URL(url).hostname.replace('www.','');}catch{return '';}})();
     renderCards(await analyzeWithClaude(text),domain);
