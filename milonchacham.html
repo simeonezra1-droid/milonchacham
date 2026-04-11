@@ -290,7 +290,7 @@
           <div class="input-label">Article URL</div>
           <div class="url-row">
             <input type="url" id="articleInput" placeholder="https://www.haaretz.co.il/..." dir="ltr" />
-            <button class="go-btn" id="analyzeArticleBtn" onclick="analyzeArticle()">נתח 🔍</button>
+            <button class="go-btn" id="analyzeArticleBtn" onclick="analyzeArticle()">Analyse 🔍</button>
           </div>
           <p class="hint">Works with Haaretz, Ynet, Walla, Wikipedia, and most Hebrew news sites.</p>
         </div>
@@ -298,7 +298,7 @@
           <div class="input-label">YouTube URL</div>
           <div class="url-row">
             <input type="text" id="ytInput" placeholder="https://www.youtube.com/watch?v=..." dir="ltr" oninput="onYtInput()" />
-            <button class="go-btn" id="analyzeYtBtn" onclick="analyzeYoutube()">נתח 🔍</button>
+            <button class="go-btn" id="analyzeYtBtn" onclick="analyzeYoutube()">Analyse 🔍</button>
           </div>
           <div class="yt-preview" id="ytPreview">
             <img class="yt-thumb" id="ytThumb" src="" alt="" />
@@ -309,8 +309,8 @@
         <div class="tab-panel" id="panelWord">
           <div class="input-label">Enter a Hebrew word</div>
           <div class="url-row">
-            <input type="text" id="wordInput" class="rtl-input" placeholder="לדוגמה: להתמודד, עמיד, מורכב..." dir="rtl" />
-            <button class="go-btn" id="analyzeWordBtn" onclick="analyzeWord()">נתח 🔍</button>
+            <input type="text" id="wordInput" class="rtl-input" placeholder="e.g. להתמודד, עמיד, מורכב..." dir="rtl" />
+            <button class="go-btn" id="analyzeWordBtn" onclick="analyzeWord()">Analyse 🔍</button>
           </div>
           <p class="hint">Enter any Hebrew word and Claude will generate a short example sentence.</p>
         </div>
@@ -348,7 +348,7 @@
       <span class="wb-count" id="learnedCount"></span>
     </div>
     <div id="learnedCards">
-      <div class="empty-state"><div class="empty-icon">🎓</div><p>עדיין לא העברת words לכאן.<br>לחץ "Learned ✓" על מילה בסרגל הצד.</p></div>
+      <div class="empty-state"><div class="empty-icon">🎓</div><p>No learned words yet.<br>Click "Learned ✓" on a word to move it here.</p></div>
     </div>
   </div>
 </div>
@@ -382,11 +382,11 @@
     <div style="margin-bottom:1.25rem;">
       <div style="display:flex;background:var(--warm);border-radius:10px;padding:3px;margin-bottom:1rem;border:1.5px solid var(--border);">
         <button class="ss-btn active" id="addResTabYt" onclick="switchAddResType('youtube')" style="font-size:0.85rem;padding:0.5rem;">▶️ YouTube</button>
-        <button class="ss-btn" id="addResTabWeb" onclick="switchAddResType('web')" style="font-size:0.85rem;padding:0.5rem;">📰 אתר</button>
+        <button class="ss-btn" id="addResTabWeb" onclick="switchAddResType('web')" style="font-size:0.85rem;padding:0.5rem;">📰 Website</button>
       </div>
       <div style="margin-bottom:0.75rem;">
         <label style="font-size:0.78rem;color:#9a8060;display:block;margin-bottom:0.35rem;">Name / Title</label>
-        <input type="text" id="resNameInput" placeholder="לדוגמה: כאן 11 חדשות" dir="rtl" style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid var(--border);border-radius:9px;font-size:0.88rem;font-family:'Heebo',sans-serif;background:var(--warm);color:var(--ink);outline:none;" />
+        <input type="text" id="resNameInput" placeholder="e.g. Kan 11 News" dir="rtl" style="width:100%;padding:0.65rem 0.9rem;border:1.5px solid var(--border);border-radius:9px;font-size:0.88rem;font-family:'Heebo',sans-serif;background:var(--warm);color:var(--ink);outline:none;" />
       </div>
       <div style="margin-bottom:0.75rem;">
         <label style="font-size:0.78rem;color:#9a8060;display:block;margin-bottom:0.35rem;" id="resUrlLabel">YouTube channel link</label>
@@ -399,7 +399,7 @@
     </div>
     <div style="display:flex;gap:0.65rem;">
       <button class="test-close-btn" onclick="closeAddResource()">Cancel</button>
-      <button class="go-btn" onclick="saveResource()" style="flex:1;">שמור</button>
+      <button class="go-btn" onclick="saveResource()" style="flex:1;">Save</button>
     </div>
   </div>
 </div>
@@ -533,7 +533,7 @@ async function saveSelected(){
   if(wordBank.length>=4){showError('המילון שלי מלא (4 words).\nלחץ "Learned ✓" על מילה כדי לפנות מקום.');return;}
   const btn=document.getElementById('saveSelectedBtn');
   const toSave=[...selectedIndices].map(i=>currentWords[i]);
-  btn.disabled=true;btn.textContent='שומר...';
+  btn.disabled=true;btn.textContent='Saving...';
   try{
     const r=await fetch(SERVER+'/wordbank/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words:toSave,source:currentSource})});
     if(!r.ok)throw new Error('Server error '+r.status);
@@ -559,7 +559,7 @@ async function archiveWord(word){
     const r2=await fetch(SERVER+'/wordbank/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word})});
     if(!r2.ok)throw new Error('Delete failed: '+r2.status);
     await loadWordBank();await loadLearnedBank();renderSidebar();
-  }catch(e){alert('שגיאה בהעברה: '+e.message);}
+  }catch(e){alert('Error moving word: '+e.message);}
 }
 async function deleteWord(word){
   try{await fetch(SERVER+'/wordbank/delete',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({word})});await loadWordBank();renderSidebar();}catch{alert('Error deleting word');}
@@ -637,7 +637,7 @@ function renderLearned(){
   const filtered=q?learnedBank.filter(w=>(w.word||'').includes(q)||(w.translation||'').toLowerCase().includes(q)):learnedBank;
   document.getElementById('learnedCount').textContent=filtered.length+' words';
   const container=document.getElementById('learnedCards');
-  if(!filtered.length){container.innerHTML=learnedBank.length===0?'<div class="empty-state"><div class="empty-icon">🎓</div><p>עדיין לא העברת words לכאן.</p></div>':'<div class="empty-state"><div class="empty-icon">🔍</div><p>לא נמצאו words</p></div>';return;}
+  if(!filtered.length){container.innerHTML=learnedBank.length===0?'<div class="empty-state"><div class="empty-icon">🎓</div><p>No learned words yet.</p></div>':'<div class="empty-state"><div class="empty-icon">🔍</div><p>No words found</p></div>';return;}
   container.innerHTML='';
   [...filtered].reverse().forEach(w=>{
     const card=document.createElement('div');card.className='learned-card';
@@ -658,12 +658,12 @@ function renderLearned(){
 // ── TEST ME ───────────────────────────────────────────────────────────────────
 function openTest(){
   const allWords=[...wordBank,...learnedBank];
-  if(allWords.length===0){showError('אין words שמורות לבחינה. שמור קודם כמה words.');return;}
+  if(allWords.length===0){showError('No saved words to test. Save some words first.');return;}
   testWords=[...allWords].sort(()=>Math.random()-0.5);
   testIndex=0;testCorrect=0;
   document.getElementById('testScore').style.display='none';
   document.getElementById('testModal').classList.add('active');
-  document.getElementById('testSub').textContent=`${testWords.length} words · כתוב את המילה בעברית`;
+  document.getElementById('testSub').textContent=`${testWords.length} words · Type the Hebrew word`;
   showTestQuestion();
 }
 function closeTest(){
@@ -902,7 +902,7 @@ function renderResources(){
   [['youtube',ytList,ytItems,'▶️','No YouTube channels added yet.'],
    ['web',webList,webItems,'📰','No websites added yet.']].forEach(([type,container,items,icon,emptyMsg])=>{
     if(!items.length){
-      container.innerHTML=`<div class="empty-state" style="padding:2rem 1rem;"><div class="empty-icon">${icon}</div><p>${emptyMsg}<br><span style="font-size:0.85rem;">לחץ "+ Add Resource" למעלה</span></p></div>`;
+      container.innerHTML=`<div class="empty-state" style="padding:2rem 1rem;"><div class="empty-icon">${icon}</div><p>${emptyMsg}<br><span style="font-size:0.85rem;">Click "+ Add Resource" above</span></p></div>`;
       return;
     }
     container.innerHTML='';
@@ -924,8 +924,8 @@ function renderResources(){
           <a href="${res.url}" target="_blank" style="font-size:0.72rem;color:var(--gold);direction:ltr;text-decoration:none;">${res.url}</a>
         </div>
         <div style="display:flex;flex-direction:column;gap:0.35rem;flex-shrink:0;">
-          <a href="${res.url}" target="_blank" style="padding:0.35rem 0.75rem;background:var(--gold);color:white;border-radius:7px;font-size:0.75rem;font-weight:600;text-decoration:none;text-align:center;">פתח</a>
-          <button onclick="deleteResource(${globalIdx})" style="padding:0.35rem 0.75rem;background:none;border:1px solid var(--border);border-radius:7px;font-size:0.75rem;color:#bbb;cursor:pointer;" onmouseover="this.style.color='var(--rust)'" onmouseout="this.style.color='#bbb'">מחק</button>
+          <a href="${res.url}" target="_blank" style="padding:0.35rem 0.75rem;background:var(--gold);color:white;border-radius:7px;font-size:0.75rem;font-weight:600;text-decoration:none;text-align:center;">Open</a>
+          <button onclick="deleteResource(${globalIdx})" style="padding:0.35rem 0.75rem;background:none;border:1px solid var(--border);border-radius:7px;font-size:0.75rem;color:#bbb;cursor:pointer;" onmouseover="this.style.color='var(--rust)'" onmouseout="this.style.color='#bbb'">Delete</button>
         </div>`;
       container.appendChild(card);
     });
@@ -947,7 +947,7 @@ async function saveResource(){
   const name=document.getElementById('resNameInput').value.trim();
   const url=document.getElementById('resUrlInput').value.trim();
   const desc=document.getElementById('resDescInput').value.trim();
-  if(!name||!url){alert('אנא מלא שם וקישור');return;}
+  if(!name||!url){alert('Please fill in a name and link');return;}
   const entry={type:addResType,name,url,desc};
   resources.push(entry);
   // Try to save to server
@@ -975,7 +975,7 @@ function deleteResource(idx){
 
   <div class="source-switcher" style="margin-bottom:1rem;">
     <button class="ss-btn active" id="mobTabArticle" onclick="switchMobSource('article')">
-      <span>📰</span><div><div>כתבה</div></div>
+      <span>📰</span><div><div>Article</div></div>
     </button>
     <button class="ss-btn" id="mobTabYoutube" onclick="switchMobSource('youtube')">
       <span>▶️</span><div><div>YouTube</div></div>
@@ -990,14 +990,14 @@ function deleteResource(idx){
       <div class="input-label">Article URL</div>
       <div class="url-row">
         <input type="url" id="mobArticleInput" placeholder="https://www.ynet.co.il/..." dir="ltr" />
-        <button class="go-btn" id="mobAnalyzeArticleBtn" onclick="mobAnalyzeArticle()">נתח</button>
+        <button class="go-btn" id="mobAnalyzeArticleBtn" onclick="mobAnalyzeArticle()">Analyse</button>
       </div>
     </div>
     <div class="tab-panel" id="mobPanelYoutube">
-      <div class="input-label">קישור YouTube</div>
+      <div class="input-label">YouTube Link</div>
       <div class="url-row">
         <input type="text" id="mobYtInput" placeholder="https://www.youtube.com/watch?v=..." dir="ltr" oninput="onMobYtInput()" />
-        <button class="go-btn" id="mobAnalyzeYtBtn" onclick="mobAnalyzeYoutube()">נתח</button>
+        <button class="go-btn" id="mobAnalyzeYtBtn" onclick="mobAnalyzeYoutube()">Analyse</button>
       </div>
       <div class="yt-preview" id="mobYtPreview">
         <img class="yt-thumb" id="mobYtThumb" src="" alt="" />
@@ -1005,10 +1005,10 @@ function deleteResource(idx){
       </div>
     </div>
     <div class="tab-panel" id="mobPanelWord">
-      <div class="input-label">הכנס מילה</div>
+      <div class="input-label">Enter a word</div>
       <div class="url-row">
-        <input type="text" id="mobWordInput" class="rtl-input" placeholder="לדוגמה: להתמודד..." dir="rtl" />
-        <button class="go-btn" id="mobAnalyzeWordBtn" onclick="mobAnalyzeWord()">נתח</button>
+        <input type="text" id="mobWordInput" class="rtl-input" placeholder="e.g. להתמודד..." dir="rtl" />
+        <button class="go-btn" id="mobAnalyzeWordBtn" onclick="mobAnalyzeWord()">Analyse</button>
       </div>
     </div>
   </div>
@@ -1052,7 +1052,7 @@ function deleteResource(idx){
     <span class="wb-count" id="mobLearnedCount"></span>
   </div>
   <div id="mobLearnedCards">
-    <div class="empty-state"><div class="empty-icon">🎓</div><p>עדיין לא למדת words</p></div>
+    <div class="empty-state"><div class="empty-icon">🎓</div><p>No learned words yet</p></div>
   </div>
 </div>
 
@@ -1133,7 +1133,7 @@ function renderMobCards(words,sourceText){
   mobCurrentWords=words;mobCurrentSource=sourceText;mobSelectedIndices.clear();
   const container=document.getElementById('mobWordCards');
   container.innerHTML='';
-  if(!words||!words.length){container.innerHTML='<div class="empty-state"><div class="empty-icon">🤔</div><p>לא נמצאו words</p></div>';
+  if(!words||!words.length){container.innerHTML='<div class="empty-state"><div class="empty-icon">🤔</div><p>No words found</p></div>';
     document.getElementById('mobSelectionBar').style.display='none';
     document.getElementById('mobResultsHeader').style.display='none';
     return;
@@ -1157,10 +1157,10 @@ function renderMobCards(words,sourceText){
 
 async function mobSaveSelected(){
   if(mobSelectedIndices.size===0)return;
-  if(wordBank.length>=4){document.getElementById('mobErrorBox').innerHTML='המילון מלא. לחץ "Learned" על מילה כדי לפנות מקום.';document.getElementById('mobErrorBox').classList.add('active');return;}
+  if(wordBank.length>=4){document.getElementById('mobErrorBox').innerHTML='My Words is full. Click "Learned ✓" on a word to free a slot.';document.getElementById('mobErrorBox').classList.add('active');return;}
   const btn=document.getElementById('mobSaveBtn');
   const toSave=[...mobSelectedIndices].map(i=>mobCurrentWords[i]);
-  btn.disabled=true;btn.textContent='שומר...';
+  btn.disabled=true;btn.textContent='Saving...';
   try{
     const r=await fetch(SERVER+'/wordbank/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({words:toSave,source:mobCurrentSource})});
     if(!r.ok)throw new Error();
@@ -1204,7 +1204,7 @@ function renderMobLearned(){
   badge.textContent=learnedBank.length;
   badge.style.display=learnedBank.length?'':'none';
   const container=document.getElementById('mobLearnedCards');
-  if(!filtered.length){container.innerHTML=learnedBank.length===0?'<div class="empty-state"><div class="empty-icon">🎓</div><p>עדיין לא העברת words לכאן</p></div>':'<div class="empty-state"><div class="empty-icon">🔍</div><p>לא נמצאו words</p></div>';return;}
+  if(!filtered.length){container.innerHTML=learnedBank.length===0?'<div class="empty-state"><div class="empty-icon">🎓</div><p>No learned words yet</p></div>':'<div class="empty-state"><div class="empty-icon">🔍</div><p>No words found</p></div>';return;}
   container.innerHTML='';
   [...filtered].reverse().forEach(w=>{
     const card=document.createElement('div');card.className='learned-card';
@@ -1241,7 +1241,7 @@ async function mobAnalyzeYoutube(){
   if(!url)return;
   const videoId=extractVideoId(url);if(!videoId)return;
   document.getElementById('mobErrorBox').classList.remove('active');
-  mobSetLoading(true,'מוריד כתוביות...');
+  mobSetLoading(true,'Fetching transcript...');
   document.getElementById('mobResultsHeader').style.display='none';
   document.getElementById('mobSelectionBar').style.display='none';
   document.getElementById('mobWordCards').innerHTML='';
@@ -1259,7 +1259,7 @@ async function mobAnalyzeWord(){
   const word=document.getElementById('mobWordInput').value.trim();
   if(!word)return;
   document.getElementById('mobErrorBox').classList.remove('active');
-  mobSetLoading(true,'מייצר משפט...');
+  mobSetLoading(true,'Generating sentence...');
   document.getElementById('mobResultsHeader').style.display='none';
   document.getElementById('mobSelectionBar').style.display='none';
   document.getElementById('mobWordCards').innerHTML='';
