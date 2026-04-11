@@ -196,17 +196,31 @@ def get_hebrew_transcript(video_id):
         return {"error": f"Could not fetch transcript: {err}"}
 
 # ─── CLAUDE ───────────────────────────────────────────────────────────────────
-CLAUDE_PROMPT = """You are a Hebrew language teacher helping an advanced-intermediate learner.
+CLAUDE_PROMPT_ADVANCED = """You are a Hebrew language teacher helping an advanced-intermediate learner.
 
-From the Hebrew text below, extract 8-12 words at B2/advanced-intermediate level — words a learner who knows everyday Hebrew might not know yet, but would encounter in news or media. Skip very basic words and hyper-technical jargon.
+From the Hebrew text below, extract ALL relevant words at B2/advanced-intermediate level — words that go beyond everyday Hebrew but appear in news and media. There is no maximum limit; extract every word that fits this level. Skip very basic words and hyper-technical jargon.
 
-For each word provide ONE short, simple example sentence (under 10 words in Hebrew). Choose the shortest, most everyday sentence possible.
+For each word provide ONE short, simple example sentence (under 10 words in Hebrew).
 
 Return ONLY a valid JSON array, no markdown, no explanation:
 [{"word":"מילה","translation":"english (1-4 words)","root":"א-ב-ג or null","partOfSpeech":"noun/verb/adjective/adverb","sentences":[{"hebrew":"משפט קצר.","english":"Short sentence."}]}]
 
 Hebrew text:
 """
+
+CLAUDE_PROMPT_INTERMEDIATE = """You are a Hebrew language teacher helping an intermediate learner.
+
+From the Hebrew text below, extract ALL relevant words at B1/intermediate level — common everyday words that an intermediate learner would be building towards. There is no maximum limit; extract every word that fits this level. These should be practical, frequently used words: common verbs, everyday nouns, basic adjectives. Avoid very basic words (A2 level) and avoid advanced/rare words.
+
+For each word provide ONE short, simple everyday sentence (under 8 words in Hebrew) that clearly shows how the word is used.
+
+Return ONLY a valid JSON array, no markdown, no explanation:
+[{"word":"מילה","translation":"english (1-4 words)","root":"א-ב-ג or null","partOfSpeech":"noun/verb/adjective/adverb","sentences":[{"hebrew":"משפט קצר.","english":"Short sentence."}]}]
+
+Hebrew text:
+"""
+
+CLAUDE_PROMPT = CLAUDE_PROMPT_ADVANCED  # default
 
 WORD_PROMPT = """You are a Hebrew language teacher.
 
@@ -218,13 +232,15 @@ Return ONLY a valid JSON array, no markdown, no explanation:
 Hebrew word: 
 """
 
-def call_claude_word(word):
+def call_claude_word(word, level='advanced'):
     if not API_KEY:
         raise ValueError("No Anthropic API key configured.")
+    level_note = "intermediate (B1) level" if level == 'intermediate' else "advanced-intermediate (B2) level"
+    prompt = WORD_PROMPT.replace("Generate ONE short", f"This is a {level_note} word. Generate ONE short")
     payload = json.dumps({
         "model": "claude-sonnet-4-5",
         "max_tokens": 500,
-        "messages": [{"role": "user", "content": WORD_PROMPT + word}]
+        "messages": [{"role": "user", "content": prompt + word}]
     }).encode("utf-8")
     req = urllib.request.Request(
         "https://api.anthropic.com/v1/messages",
@@ -244,13 +260,14 @@ def call_claude_word(word):
         raise ValueError("No JSON found in Claude response")
     return json.loads(match.group(0))
 
-def call_claude(hebrew_text):
+def call_claude(hebrew_text, level='advanced'):
     if not API_KEY:
         raise ValueError("No Anthropic API key configured.")
+    prompt = CLAUDE_PROMPT_INTERMEDIATE if level == 'intermediate' else CLAUDE_PROMPT_ADVANCED
     payload = json.dumps({
         "model": "claude-sonnet-4-5",
-        "max_tokens": 2000,
-        "messages": [{"role": "user", "content": CLAUDE_PROMPT + hebrew_text[:6000]}]
+        "max_tokens": 4000,
+        "messages": [{"role": "user", "content": prompt + hebrew_text[:6000]}]
     }).encode("utf-8")
     req = urllib.request.Request(
         "https://api.anthropic.com/v1/messages",
@@ -372,12 +389,13 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json(400, {"error": "No text provided"})
                 return
             print(f"  🧠 Analyzing {len(text)} chars with Claude...")
+            level = body.get("level", "advanced")
             try:
                 if text.startswith('__WORD__'):
                     word = text[8:].strip()
-                    words = call_claude_word(word)
+                    words = call_claude_word(word, level)
                 else:
-                    words = call_claude(text)
+                    words = call_claude(text, level)
                 self.send_json(200, {"words": words})
             except Exception as e:
                 self.send_json(500, {"error": f"Claude API error: {e}"})
