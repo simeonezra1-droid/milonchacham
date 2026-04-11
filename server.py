@@ -198,7 +198,7 @@ def get_hebrew_transcript(video_id):
 # ─── CLAUDE ───────────────────────────────────────────────────────────────────
 CLAUDE_PROMPT_ADVANCED = """You are a Hebrew language teacher helping an advanced-intermediate learner.
 
-From the Hebrew text below, extract ALL relevant words at B2/advanced-intermediate level — words that go beyond everyday Hebrew but appear in news and media. There is no maximum limit; extract every word that fits this level. Skip very basic words and hyper-technical jargon.
+From the Hebrew text below, extract 12 words at B2/advanced-intermediate level — words that go beyond everyday Hebrew but appear in news and media. Skip very basic words and hyper-technical jargon.
 
 For each word provide ONE short, simple example sentence (under 10 words in Hebrew).
 
@@ -210,7 +210,7 @@ Hebrew text:
 
 CLAUDE_PROMPT_INTERMEDIATE = """You are a Hebrew language teacher helping an intermediate learner.
 
-From the Hebrew text below, extract ALL relevant words at B1/intermediate level — common everyday words that an intermediate learner would be building towards. There is no maximum limit; extract every word that fits this level. These should be practical, frequently used words: common verbs, everyday nouns, basic adjectives. Avoid very basic words (A2 level) and avoid advanced/rare words.
+From the Hebrew text below, extract 12 words at B1/intermediate level — common everyday words that an intermediate learner would be building towards. These should be practical, frequently used words: common verbs, everyday nouns, basic adjectives. Avoid very basic words (A2 level) and avoid advanced/rare words.
 
 For each word provide ONE short, simple everyday sentence (under 8 words in Hebrew) that clearly shows how the word is used.
 
@@ -231,6 +231,29 @@ Return ONLY a valid JSON array, no markdown, no explanation:
 
 Hebrew word: 
 """
+
+def repair_and_parse(json_str):
+    """Try to parse JSON, and if truncated, repair it."""
+    try:
+        return json.loads(json_str)
+    except json.JSONDecodeError:
+        # Try truncating to last complete object
+        for end_marker in ['},\n]', '}, \n]', '},\r\n]', '}]', '} ]']:
+            idx = json_str.rfind(end_marker)
+            if idx > 0:
+                repaired = json_str[:idx+len(end_marker)-1] + ']' if not end_marker.endswith(']') else json_str[:idx+len(end_marker)]
+                try:
+                    return json.loads(repaired)
+                except Exception:
+                    pass
+        # Last resort: find last } and close array
+        last_brace = json_str.rfind('}')
+        if last_brace > 0:
+            try:
+                return json.loads(json_str[:last_brace+1] + ']')
+            except Exception:
+                pass
+        raise ValueError("Response was too long and could not be parsed. Try a shorter text or fewer words.")
 
 def call_claude_word(word, level='advanced'):
     if not API_KEY:
@@ -258,15 +281,17 @@ def call_claude_word(word, level='advanced'):
     match = re.search(r'\[[\s\S]*\]', raw)
     if not match:
         raise ValueError("No JSON found in Claude response")
-    return json.loads(match.group(0))
+    return repair_and_parse(match.group(0))
 
-def call_claude(hebrew_text, level='advanced'):
+def call_claude(hebrew_text, level='advanced', exclude=''):
     if not API_KEY:
         raise ValueError("No Anthropic API key configured.")
     prompt = CLAUDE_PROMPT_INTERMEDIATE if level == 'intermediate' else CLAUDE_PROMPT_ADVANCED
+    if exclude:
+        prompt = prompt.replace('Hebrew text:', 'Do NOT include these already-shown words: ' + exclude + '\n\nHebrew text:')
     payload = json.dumps({
         "model": "claude-sonnet-4-5",
-        "max_tokens": 4000,
+        "max_tokens": 8000,
         "messages": [{"role": "user", "content": prompt + hebrew_text[:6000]}]
     }).encode("utf-8")
     req = urllib.request.Request(
@@ -390,12 +415,13 @@ class Handler(BaseHTTPRequestHandler):
                 return
             print(f"  🧠 Analyzing {len(text)} chars with Claude...")
             level = body.get("level", "advanced")
+            exclude = body.get("exclude", "")
             try:
                 if text.startswith('__WORD__'):
                     word = text[8:].strip()
                     words = call_claude_word(word, level)
                 else:
-                    words = call_claude(text, level)
+                    words = call_claude(text, level, exclude)
                 self.send_json(200, {"words": words})
             except Exception as e:
                 self.send_json(500, {"error": f"Claude API error: {e}"})
