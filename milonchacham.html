@@ -323,6 +323,7 @@
                 onfocus="showDropdown('articleDropdown')" onblur="hideDropdown('articleDropdown', 200)" oninput="filterDropdown('articleDropdown', this.value)" />
               <div class="search-dropdown" id="articleDropdown"></div>
             </div>
+            <button class="open-btn" id="openArticleBtn" onclick="openSource('article')" title="Open in new tab">↗ Open</button>
             <button class="go-btn" id="analyzeArticleBtn" onclick="analyzeArticle()">Search 🔍</button>
           </div>
           <p class="hint">Works with Haaretz, Ynet, Walla, Wikipedia, and most Hebrew news sites.</p>
@@ -336,6 +337,7 @@
                 onfocus="showDropdown('ytDropdown')" onblur="hideDropdown('ytDropdown', 200)" />
               <div class="search-dropdown" id="ytDropdown"></div>
             </div>
+            <button class="open-btn" id="openYtBtn" onclick="openSource('youtube')" title="Open in new tab">↗ Open</button>
             <button class="go-btn" id="analyzeYtBtn" onclick="analyzeYoutube()">Search 🔍</button>
           </div>
           <div class="yt-preview" id="ytPreview">
@@ -829,8 +831,6 @@ async function analyzeArticle(){
   document.getElementById('resultsHeader').classList.remove('active');
   document.getElementById('selectionBar').classList.remove('active');
   document.getElementById('wordCards').innerHTML='';
-  // Open the article in a new tab
-  window.open(url, '_blank');
   addRecentSearch({type:'article', url, title: url.replace(/https?:\/\/www\./, '').split('/')[0]});
   try{
     // Fetch via server to avoid CORS issues with news sites
@@ -857,8 +857,6 @@ async function analyzeYoutube(){
   document.getElementById('resultsHeader').classList.remove('active');
   document.getElementById('selectionBar').classList.remove('active');
   document.getElementById('wordCards').innerHTML='';
-  // Open video in new tab
-  window.open(url, '_blank');
   addRecentSearch({type:'youtube', url, title: 'YouTube · '+videoId});
   try{
     const r=await fetch(`${SERVER}/transcript?url=${encodeURIComponent(url)}`);
@@ -1005,6 +1003,17 @@ function deleteResource(idx){
   resources.splice(idx,1);
   try{fetch(SERVER+'/resources/save',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({entries:resources})});}catch{}
   renderResources();
+}
+
+// ── OPEN SOURCE ──────────────────────────────────────────────────────────────
+function openSource(type) {
+  let url = '';
+  if (type === 'article') url = document.getElementById('articleInput').value.trim();
+  else if (type === 'youtube') url = document.getElementById('ytInput').value.trim();
+  else if (type === 'mob-article') url = document.getElementById('mobArticleInput').value.trim();
+  else if (type === 'mob-youtube') url = document.getElementById('mobYtInput').value.trim();
+  if (!url) { showError('Please enter a URL first.'); return; }
+  window.open(url, '_blank');
 }
 
 // ── SEARCH DROPDOWN ──────────────────────────────────────────────────────────
@@ -1343,7 +1352,6 @@ async function mobAnalyzeArticle(){
   document.getElementById('mobResultsHeader').style.display='none';
   document.getElementById('mobSelectionBar').style.display='none';
   document.getElementById('mobWordCards').innerHTML='';
-  window.open(url, '_blank');
   addRecentSearch({type:'article', url, title: url.replace(/https?:\/\/www\./, '').split('/')[0]});
   try{
     const fetchRes=await fetch(`${SERVER}/fetch-article?url=${encodeURIComponent(url)}`);
@@ -1365,7 +1373,6 @@ async function mobAnalyzeYoutube(){
   document.getElementById('mobResultsHeader').style.display='none';
   document.getElementById('mobSelectionBar').style.display='none';
   document.getElementById('mobWordCards').innerHTML='';
-  window.open(url, '_blank');
   addRecentSearch({type:'youtube', url, title: 'YouTube · '+videoId});
   try{
     const r=await fetch(`${SERVER}/transcript?url=${encodeURIComponent(url)}`);
