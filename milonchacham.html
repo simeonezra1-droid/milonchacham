@@ -818,9 +818,13 @@ async function getMoreWords(){
     if(!data.words||!data.words.length){showError('No more words found at this level.');return;}
     // Add to excluded so next click gives different words again
     excludedWords=[...excludedWords,...data.words.map(w=>w.word)];
-    renderCards(data.words, lastAnalyzedSource);
-  }catch(e){showError(e.message);}
-  finally{btn.disabled=false;btn.textContent='🔄 More Words';}
+    if(isMobile()) renderMobCards(data.words, lastAnalyzedSource);
+    else renderCards(data.words, lastAnalyzedSource);
+  }catch(e){
+    if(isMobile()){document.getElementById('mobErrorBox').innerHTML=e.message;document.getElementById('mobErrorBox').classList.add('active');}
+    else showError(e.message);
+  }
+  finally{btn.disabled=false;btn.textContent=isMobile()?'🔄 More':'🔄 More Words';}
 }
 
 // ── ANALYZE ARTICLE ───────────────────────────────────────────────────────────
@@ -1111,14 +1115,16 @@ function selectDropdownItem(url) {
     <div class="tab-panel active" id="mobPanelArticle">
       <div class="input-label">Article URL</div>
       <div class="url-row">
-        <input type="url" id="mobArticleInput" placeholder="https://www.ynet.co.il/..." dir="ltr" />
+        <input type="url" id="mobArticleInput" placeholder="https://www.ynet.co.il/..." dir="ltr" style="flex:1;min-width:0;" />
+        <button class="open-btn" onclick="openSource('mob-article')" style="padding:0.68rem 0.6rem;font-size:1rem;">↗</button>
         <button class="go-btn" id="mobAnalyzeArticleBtn" onclick="mobAnalyzeArticle()">Search</button>
       </div>
     </div>
     <div class="tab-panel" id="mobPanelYoutube">
       <div class="input-label">YouTube Link</div>
       <div class="url-row">
-        <input type="text" id="mobYtInput" placeholder="https://www.youtube.com/watch?v=..." dir="ltr" oninput="onMobYtInput()" />
+        <input type="text" id="mobYtInput" placeholder="https://www.youtube.com/watch?v=..." dir="ltr" oninput="onMobYtInput()" style="flex:1;min-width:0;" />
+        <button class="open-btn" onclick="openSource('mob-youtube')" style="padding:0.68rem 0.6rem;font-size:1rem;">↗</button>
         <button class="go-btn" id="mobAnalyzeYtBtn" onclick="mobAnalyzeYoutube()">Search</button>
       </div>
       <div class="yt-preview" id="mobYtPreview">
@@ -1359,7 +1365,11 @@ async function mobAnalyzeArticle(){
     if(fetchData.error)throw new Error(fetchData.error);
     mobSetLoading(true,'Analysing words...');
     const domain=(()=>{try{return new URL(url).hostname.replace('www.','');}catch{return '';}})();
-    renderMobCards(await analyzeWithClaude(fetchData.text),domain);
+    const mobAWords=await analyzeWithClaude(fetchData.text);
+    lastAnalyzedText=fetchData.text;
+    lastAnalyzedSource=domain;
+    excludedWords=mobAWords.map(w=>w.word);
+    renderMobCards(mobAWords,domain);
   }catch(e){document.getElementById('mobErrorBox').innerHTML=e.message;document.getElementById('mobErrorBox').classList.add('active');}
   finally{mobSetLoading(false);}
 }
@@ -1379,7 +1389,11 @@ async function mobAnalyzeYoutube(){
     const data=await r.json();
     if(data.error)throw new Error(data.error);
     mobSetLoading(true,'Analysing words...');
-    renderMobCards(await analyzeWithClaude(data.transcript),'YouTube · '+videoId);
+    const mobYtWords=await analyzeWithClaude(data.transcript);
+    lastAnalyzedText=data.transcript;
+    lastAnalyzedSource='YouTube · '+videoId;
+    excludedWords=mobYtWords.map(w=>w.word);
+    renderMobCards(mobYtWords,'YouTube · '+videoId);
   }catch(e){document.getElementById('mobErrorBox').innerHTML=e.message;document.getElementById('mobErrorBox').classList.add('active');}
   finally{mobSetLoading(false);}
 }
@@ -1393,7 +1407,11 @@ async function mobAnalyzeWord(){
   document.getElementById('mobSelectionBar').style.display='none';
   document.getElementById('mobWordCards').innerHTML='';
   try{
-    renderMobCards(await analyzeWithClaude('__WORD__'+word),'מילה: '+word);
+    const mobWWords=await analyzeWithClaude('__WORD__'+word);
+    lastAnalyzedText='__WORD__'+word;
+    lastAnalyzedSource='Word: '+word;
+    excludedWords=mobWWords.map(w=>w.word);
+    renderMobCards(mobWWords,'Word: '+word);
   }catch(e){document.getElementById('mobErrorBox').innerHTML=e.message;document.getElementById('mobErrorBox').classList.add('active');}
   finally{mobSetLoading(false);}
 }
