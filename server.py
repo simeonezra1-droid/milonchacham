@@ -234,26 +234,44 @@ Hebrew word:
 
 def repair_and_parse(json_str):
     """Try to parse JSON, and if truncated, repair it."""
+    # Clean up common issues
+    json_str = json_str.strip()
+    # Remove any markdown fences
+    json_str = re.sub(r'^```(?:json)?\s*', '', json_str)
+    json_str = re.sub(r'\s*```$', '', json_str)
+    json_str = json_str.strip()
+
+    # Try direct parse first
     try:
         return json.loads(json_str)
     except json.JSONDecodeError:
-        # Try truncating to last complete object
-        for end_marker in ['},\n]', '}, \n]', '},\r\n]', '}]', '} ]']:
-            idx = json_str.rfind(end_marker)
+        pass
+
+    # Find the JSON array in the string (may have extra text around it)
+    match = re.search(r'\[[\s\S]*\]', json_str)
+    if match:
+        try:
+            return json.loads(match.group(0))
+        except json.JSONDecodeError:
+            json_str = match.group(0)
+
+    # Try truncating to last complete object
+    last_brace = json_str.rfind('}')
+    if last_brace > 0:
+        for closing in ['}]', '} ]', '},\n]']:
+            idx = json_str.rfind(closing)
             if idx > 0:
-                repaired = json_str[:idx+len(end_marker)-1] + ']' if not end_marker.endswith(']') else json_str[:idx+len(end_marker)]
                 try:
-                    return json.loads(repaired)
+                    return json.loads(json_str[:idx+len(closing)])
                 except Exception:
                     pass
-        # Last resort: find last } and close array
-        last_brace = json_str.rfind('}')
-        if last_brace > 0:
-            try:
-                return json.loads(json_str[:last_brace+1] + ']')
-            except Exception:
-                pass
-        raise ValueError("Response was too long and could not be parsed. Try a shorter text or fewer words.")
+        # Just close after last }
+        try:
+            return json.loads(json_str[:last_brace+1] + ']')
+        except Exception:
+            pass
+
+    raise ValueError("Could not parse the response. Please try again.")
 
 def call_claude_word(word, level='advanced'):
     if not API_KEY:
@@ -279,9 +297,9 @@ def call_claude_word(word, level='advanced'):
         data = json.loads(resp.read().decode("utf-8"))
     raw = "".join(b.get("text","") for b in data.get("content",[]) if b.get("type")=="text")
     match = re.search(r'\[[\s\S]*\]', raw)
-    if not match:
-        raise ValueError("No JSON found in Claude response")
-    return repair_and_parse(match.group(0))
+    if match:
+        return repair_and_parse(match.group(0))
+    return repair_and_parse(raw)
 
 def call_claude(hebrew_text, level='advanced', exclude=''):
     if not API_KEY:

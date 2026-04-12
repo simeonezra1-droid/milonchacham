@@ -1370,7 +1370,12 @@ async function mobAnalyzeArticle(){
     lastAnalyzedSource=domain;
     excludedWords=mobAWords.map(w=>w.word);
     renderMobCards(mobAWords,domain);
-  }catch(e){document.getElementById('mobErrorBox').innerHTML=e.message;document.getElementById('mobErrorBox').classList.add('active');}
+  }catch(e){
+    const box=document.getElementById('mobErrorBox');
+    const msg=e.message||'Error';
+    box.innerHTML=msg+(msg.includes('Claude API')?'<br><small>Please try again.</small>':'');
+    box.classList.add('active');
+  }
   finally{mobSetLoading(false);}
 }
 
@@ -1394,7 +1399,12 @@ async function mobAnalyzeYoutube(){
     lastAnalyzedSource='YouTube · '+videoId;
     excludedWords=mobYtWords.map(w=>w.word);
     renderMobCards(mobYtWords,'YouTube · '+videoId);
-  }catch(e){document.getElementById('mobErrorBox').innerHTML=e.message;document.getElementById('mobErrorBox').classList.add('active');}
+  }catch(e){
+    const box=document.getElementById('mobErrorBox');
+    const msg=e.message||'Error';
+    box.innerHTML=msg+(msg.includes('Claude API')?'<br><small>Please try again — Claude occasionally has trouble parsing responses.</small>':'');
+    box.classList.add('active');
+  }
   finally{mobSetLoading(false);}
 }
 
@@ -1412,7 +1422,12 @@ async function mobAnalyzeWord(){
     lastAnalyzedSource='Word: '+word;
     excludedWords=mobWWords.map(w=>w.word);
     renderMobCards(mobWWords,'Word: '+word);
-  }catch(e){document.getElementById('mobErrorBox').innerHTML=e.message;document.getElementById('mobErrorBox').classList.add('active');}
+  }catch(e){
+    const box=document.getElementById('mobErrorBox');
+    const msg=e.message||'Error';
+    box.innerHTML=msg+(msg.includes('Claude API')?'<br><small>Please try again.</small>':'');
+    box.classList.add('active');
+  }
   finally{mobSetLoading(false);}
 }
 
