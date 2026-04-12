@@ -173,6 +173,35 @@
   .test-score{font-family:'Frank Ruhl Libre',serif;font-size:1.1rem;text-align:center;margin-bottom:1rem;}
 
   /* ── DESKTOP only ── */
+  /* Search dropdown */
+  .search-dropdown {
+    display: none;
+    position: absolute;
+    top: 100%;
+    right: 0; left: 0;
+    background: var(--card);
+    border: 1.5px solid var(--gold);
+    border-top: none;
+    border-radius: 0 0 12px 12px;
+    box-shadow: var(--shadow-md);
+    z-index: 50;
+    max-height: 320px;
+    overflow-y: auto;
+  }
+  .search-dropdown.visible { display: block; }
+  .sd-section { padding: 0.6rem 0.85rem 0.35rem; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.08em; color: #9a8060; font-weight: 700; font-family: 'Frank Ruhl Libre', serif; }
+  .sd-item {
+    display: flex; align-items: center; gap: 0.6rem;
+    padding: 0.55rem 0.85rem; cursor: pointer;
+    transition: background 0.15s; border-bottom: 1px solid rgba(26,18,8,0.05);
+  }
+  .sd-item:hover { background: var(--warm); }
+  .sd-item:last-child { border-bottom: none; }
+  .sd-icon { font-size: 1rem; flex-shrink: 0; }
+  .sd-title { font-size: 0.85rem; font-weight: 600; }
+  .sd-url { font-size: 0.7rem; color: #9a8060; direction: ltr; }
+  .search-wrap { position: relative; flex: 1; }
+
   @media(min-width:701px){
     .mobile-tabs { display: none !important; }
     .mobile-page { display: block !important; }
@@ -234,7 +263,7 @@
       <span class="header-subtitle">Hebrew Vocab Tool</span>
     </div>
     <nav class="header-nav">
-      <button class="hn-btn active" id="navAnalyze" onclick="switchPage('analyze')">🔍 Analyse</button>
+      <button class="hn-btn active" id="navAnalyze" onclick="switchPage('analyze')">🔍 Search</button>
       <button class="hn-btn" id="navLearned" onclick="switchPage('learned')">🎓 Learned <span class="hn-badge" id="learnedBadge">0</span></button>
       <div style="display:flex;background:var(--warm);border-radius:8px;padding:3px;border:1.5px solid var(--border);gap:2px;">
         <button class="hn-btn active" id="headerLevelIntermediate" onclick="setLevel('intermediate')" style="border:none;background:transparent;padding:0.35rem 0.7rem;font-size:0.82rem;">📗 Intermediate</button>
@@ -289,16 +318,25 @@
         <div class="tab-panel active" id="panelArticle">
           <div class="input-label">Article URL</div>
           <div class="url-row">
-            <input type="url" id="articleInput" placeholder="https://www.haaretz.co.il/..." dir="ltr" />
-            <button class="go-btn" id="analyzeArticleBtn" onclick="analyzeArticle()">Analyse 🔍</button>
+            <div class="search-wrap">
+              <input type="url" id="articleInput" placeholder="https://www.haaretz.co.il/..." dir="ltr"
+                onfocus="showDropdown('articleDropdown')" onblur="hideDropdown('articleDropdown', 200)" oninput="filterDropdown('articleDropdown', this.value)" />
+              <div class="search-dropdown" id="articleDropdown"></div>
+            </div>
+            <button class="go-btn" id="analyzeArticleBtn" onclick="analyzeArticle()">Search 🔍</button>
           </div>
           <p class="hint">Works with Haaretz, Ynet, Walla, Wikipedia, and most Hebrew news sites.</p>
         </div>
         <div class="tab-panel" id="panelYoutube">
           <div class="input-label">YouTube URL</div>
           <div class="url-row">
-            <input type="text" id="ytInput" placeholder="https://www.youtube.com/watch?v=..." dir="ltr" oninput="onYtInput()" />
-            <button class="go-btn" id="analyzeYtBtn" onclick="analyzeYoutube()">Analyse 🔍</button>
+            <div class="search-wrap">
+              <input type="text" id="ytInput" placeholder="https://www.youtube.com/watch?v=..." dir="ltr"
+                oninput="onYtInput();filterDropdown('ytDropdown', this.value)"
+                onfocus="showDropdown('ytDropdown')" onblur="hideDropdown('ytDropdown', 200)" />
+              <div class="search-dropdown" id="ytDropdown"></div>
+            </div>
+            <button class="go-btn" id="analyzeYtBtn" onclick="analyzeYoutube()">Search 🔍</button>
           </div>
           <div class="yt-preview" id="ytPreview">
             <img class="yt-thumb" id="ytThumb" src="" alt="" />
@@ -310,7 +348,7 @@
           <div class="input-label">Enter a Hebrew word</div>
           <div class="url-row">
             <input type="text" id="wordInput" class="rtl-input" placeholder="e.g. להתמודד, עמיד, מורכב..." dir="rtl" />
-            <button class="go-btn" id="analyzeWordBtn" onclick="analyzeWord()">Analyse 🔍</button>
+            <button class="go-btn" id="analyzeWordBtn" onclick="analyzeWord()">Search 🔍</button>
           </div>
           <p class="hint">Enter any Hebrew word and Claude will generate a short example sentence.</p>
         </div>
@@ -791,6 +829,9 @@ async function analyzeArticle(){
   document.getElementById('resultsHeader').classList.remove('active');
   document.getElementById('selectionBar').classList.remove('active');
   document.getElementById('wordCards').innerHTML='';
+  // Open the article in a new tab
+  window.open(url, '_blank');
+  addRecentSearch({type:'article', url, title: url.replace(/https?:\/\/www\./, '').split('/')[0]});
   try{
     // Fetch via server to avoid CORS issues with news sites
     const fetchRes=await fetch(`${SERVER}/fetch-article?url=${encodeURIComponent(url)}`);
@@ -816,6 +857,9 @@ async function analyzeYoutube(){
   document.getElementById('resultsHeader').classList.remove('active');
   document.getElementById('selectionBar').classList.remove('active');
   document.getElementById('wordCards').innerHTML='';
+  // Open video in new tab
+  window.open(url, '_blank');
+  addRecentSearch({type:'youtube', url, title: 'YouTube · '+videoId});
   try{
     const r=await fetch(`${SERVER}/transcript?url=${encodeURIComponent(url)}`);
     const data=await r.json();
@@ -963,6 +1007,75 @@ function deleteResource(idx){
   renderResources();
 }
 
+// ── SEARCH DROPDOWN ──────────────────────────────────────────────────────────
+const DEFAULT_CHANNELS = [
+  {type:'youtube', title:'Piece of Hebrew Podcast', url:'https://www.youtube.com/@PieceofHebrew/podcasts', icon:'▶️'},
+  {type:'youtube', title:'כאן 11 Playlists', url:'https://www.youtube.com/@KAN11/playlists', icon:'▶️'},
+];
+
+let recentSearches = JSON.parse(localStorage.getItem('hebrewToolRecent') || '[]');
+
+function addRecentSearch(item) {
+  recentSearches = recentSearches.filter(r => r.url !== item.url);
+  recentSearches.unshift(item);
+  recentSearches = recentSearches.slice(0, 6);
+  try { localStorage.setItem('hebrewToolRecent', JSON.stringify(recentSearches)); } catch {}
+}
+
+function buildDropdownHTML(items) {
+  if (!items.length) return '<div class="sd-item"><span class="sd-url" style="padding:0.3rem 0;">No suggestions yet</span></div>';
+  return items.map(item => `
+    <div class="sd-item" onmousedown="selectDropdownItem('${item.url.replace(/'/g,"\'")}')">
+      <span class="sd-icon">${item.icon || (item.type==='youtube' ? '▶️' : '📰')}</span>
+      <div><div class="sd-title">${item.title}</div><div class="sd-url">${item.url}</div></div>
+    </div>`).join('');
+}
+
+function showDropdown(id) {
+  const dd = document.getElementById(id);
+  if (!dd) return;
+  const isYt = id === 'ytDropdown';
+  const channels = isYt ? DEFAULT_CHANNELS : DEFAULT_CHANNELS.filter(c=>c.type==='web');
+  const recent = recentSearches.filter(r => isYt ? r.type==='youtube' : r.type==='article');
+  let html = '';
+  if (recent.length) {
+    html += '<div class="sd-section">Recent</div>' + buildDropdownHTML(recent.map(r=>({...r, icon: r.type==='youtube'?'▶️':'📰'})));
+  }
+  if (isYt) {
+    html += '<div class="sd-section">Suggested Channels</div>' + buildDropdownHTML(DEFAULT_CHANNELS);
+  }
+  dd.innerHTML = html || '<div class="sd-item"><span class="sd-url" style="padding:0.3rem 0;">Paste any URL above</span></div>';
+  dd.classList.add('visible');
+}
+
+function hideDropdown(id, delay=0) {
+  setTimeout(() => {
+    const dd = document.getElementById(id);
+    if (dd) dd.classList.remove('visible');
+  }, delay);
+}
+
+function filterDropdown(id, val) {
+  if (val && val.length > 3) { hideDropdown(id); return; }
+  showDropdown(id);
+}
+
+function selectDropdownItem(url) {
+  // Figure out which input to fill
+  if (url.includes('youtube') || url.includes('youtu.be')) {
+    const inp = document.getElementById('ytInput') || document.getElementById('mobYtInput');
+    if (inp) { inp.value = url; onYtInput(); }
+    hideDropdown('ytDropdown');
+    // Switch to YouTube tab if not already
+    switchSource('youtube');
+  } else {
+    const inp = document.getElementById('articleInput') || document.getElementById('mobArticleInput');
+    if (inp) inp.value = url;
+    hideDropdown('articleDropdown');
+    switchSource('article');
+  }
+}
+
 // ── INIT ──────────────────────────────────────────────────────────────────────
 (async()=>{await loadWordBank();await loadLearnedBank();await loadResources();renderSidebar();})();
 </script>
@@ -990,14 +1103,14 @@ function deleteResource(idx){
       <div class="input-label">Article URL</div>
       <div class="url-row">
         <input type="url" id="mobArticleInput" placeholder="https://www.ynet.co.il/..." dir="ltr" />
-        <button class="go-btn" id="mobAnalyzeArticleBtn" onclick="mobAnalyzeArticle()">Analyse</button>
+        <button class="go-btn" id="mobAnalyzeArticleBtn" onclick="mobAnalyzeArticle()">Search</button>
       </div>
     </div>
     <div class="tab-panel" id="mobPanelYoutube">
       <div class="input-label">YouTube Link</div>
       <div class="url-row">
         <input type="text" id="mobYtInput" placeholder="https://www.youtube.com/watch?v=..." dir="ltr" oninput="onMobYtInput()" />
-        <button class="go-btn" id="mobAnalyzeYtBtn" onclick="mobAnalyzeYoutube()">Analyse</button>
+        <button class="go-btn" id="mobAnalyzeYtBtn" onclick="mobAnalyzeYoutube()">Search</button>
       </div>
       <div class="yt-preview" id="mobYtPreview">
         <img class="yt-thumb" id="mobYtThumb" src="" alt="" />
@@ -1008,7 +1121,7 @@ function deleteResource(idx){
       <div class="input-label">Enter a word</div>
       <div class="url-row">
         <input type="text" id="mobWordInput" class="rtl-input" placeholder="e.g. להתמודד..." dir="rtl" />
-        <button class="go-btn" id="mobAnalyzeWordBtn" onclick="mobAnalyzeWord()">Analyse</button>
+        <button class="go-btn" id="mobAnalyzeWordBtn" onclick="mobAnalyzeWord()">Search</button>
       </div>
     </div>
   </div>
@@ -1026,6 +1139,7 @@ function deleteResource(idx){
   <div class="selection-bar" id="mobSelectionBar" style="display:none;">
     <span class="sel-hint">☑️ Select words to save</span>
     <span class="sel-count" id="mobSelCount">0 selected</span>
+    <button class="save-btn" onclick="getMoreWords()" style="background:var(--gold);">🔄 More</button>
     <button class="save-btn" id="mobSaveBtn" onclick="mobSaveSelected()" disabled>💾 Save</button>
   </div>
   <div class="word-cards" id="mobWordCards">
@@ -1209,8 +1323,12 @@ function renderMobLearned(){
   [...filtered].reverse().forEach(w=>{
     const card=document.createElement('div');card.className='learned-card';
     const s=firstSentence(w.sentences);
+    const mobLSafe=w.word.replace(/'/g,"\\'");
     card.innerHTML=`
-      <div class="lc-meta"><span>${w.translation||''}</span>${w.partOfSpeech?`<span style="opacity:0.4">·</span><span>${w.partOfSpeech}</span>`:''}</div>
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:0.5rem;margin-bottom:0.35rem;">
+        <div class="lc-meta" style="margin-bottom:0;"><span>${w.translation||''}</span>${w.partOfSpeech?`<span style="opacity:0.4">·</span><span>${w.partOfSpeech}</span>`:''}</div>
+        <button onclick="restoreWord('${mobLSafe}');renderMobLearned();" style="padding:0.22rem 0.6rem;background:none;border:1px solid var(--border);border-radius:5px;font-size:0.7rem;color:#9a8060;cursor:pointer;white-space:nowrap;">↩ Restore</button>
+      </div>
       ${s?`<div class="lc-sentence">${s.hebrew}<div class="lc-sentence-en">${s.english}</div></div>`:''}`;
     container.appendChild(card);
   });
@@ -1225,6 +1343,8 @@ async function mobAnalyzeArticle(){
   document.getElementById('mobResultsHeader').style.display='none';
   document.getElementById('mobSelectionBar').style.display='none';
   document.getElementById('mobWordCards').innerHTML='';
+  window.open(url, '_blank');
+  addRecentSearch({type:'article', url, title: url.replace(/https?:\/\/www\./, '').split('/')[0]});
   try{
     const fetchRes=await fetch(`${SERVER}/fetch-article?url=${encodeURIComponent(url)}`);
     const fetchData=await fetchRes.json();
@@ -1245,6 +1365,8 @@ async function mobAnalyzeYoutube(){
   document.getElementById('mobResultsHeader').style.display='none';
   document.getElementById('mobSelectionBar').style.display='none';
   document.getElementById('mobWordCards').innerHTML='';
+  window.open(url, '_blank');
+  addRecentSearch({type:'youtube', url, title: 'YouTube · '+videoId});
   try{
     const r=await fetch(`${SERVER}/transcript?url=${encodeURIComponent(url)}`);
     const data=await r.json();
