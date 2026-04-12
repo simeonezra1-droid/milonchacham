@@ -89,42 +89,56 @@ def save_resources(data):
 
 # ─── ARTICLE FETCH ────────────────────────────────────────────────────────────
 def fetch_article_text(url):
+    import gzip as gzip_mod
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'he,en;q=0.9',
-        'Accept-Encoding': 'gzip, deflate',
         'Referer': 'https://www.google.com/',
     }
     req = urllib.request.Request(url, headers=headers)
     try:
         with urllib.request.urlopen(req, timeout=15) as resp:
             raw = resp.read()
-            # Try to detect encoding
             content_type = resp.headers.get('Content-Type', '')
+            # Decompress gzip if needed
+            if raw[:2] == b'\x1f\x8b':
+                try:
+                    raw = gzip_mod.decompress(raw)
+                except Exception:
+                    pass
+            # Detect encoding
             encoding = 'utf-8'
             if 'charset=' in content_type:
-                encoding = content_type.split('charset=')[-1].strip().split(';')[0]
+                enc = content_type.split('charset=')[-1].strip().split(';')[0].strip()
+                if enc:
+                    encoding = enc
             try:
                 html = raw.decode(encoding, errors='replace')
             except Exception:
                 html = raw.decode('utf-8', errors='replace')
     except Exception as e:
-        # Try with http if https fails
         if url.startswith('https://'):
             return fetch_article_text(url.replace('https://', 'http://', 1))
         raise e
 
-    # Strip HTML tags and extract text
-    import html as html_module
-    # Remove scripts, styles, nav elements
-    import re as re_mod
-    html = re_mod.sub(r'<(script|style|nav|header|footer|aside)[^>]*>[\s\S]*?</>', ' ', html, flags=re_mod.IGNORECASE)
-    html = re_mod.sub(r'<[^>]+>', ' ', html)
-    html = html_module.unescape(html)
-    # Clean whitespace
-    text = ' '.join(html.split())
+    import html as html_lib
+    # Remove non-content tags
+    html = re.sub(r'<(script|style|nav|header|footer|aside|meta|link)[^>]*>[\s\S]*?</\1>', ' ', html, flags=re.IGNORECASE)
+    html = re.sub(r'<[^>]+>', ' ', html)
+    html = html_lib.unescape(html)
+
+    # Keep only words containing Hebrew or Latin letters (filter binary garbage)
+    cleaned = []
+    for word in html.split():
+        if re.search('[\u05d0-\u05ea\u05b0-\u05c7a-zA-Z]', word):
+            cleaned.append(word)
+
+    text = ' '.join(cleaned)
+    heb_count = len(re.findall('[\u05d0-\u05ea]', text))
+    print(f"  📄 Fetched {len(text)} chars, {heb_count} Hebrew chars")
     return text
+
 
 # ─── YOUTUBE ──────────────────────────────────────────────────────────────────
 def extract_video_id(url_or_id):
