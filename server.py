@@ -337,10 +337,11 @@ def call_claude(hebrew_text, level='advanced', exclude=''):
     with urllib.request.urlopen(req, timeout=60) as resp:
         data = json.loads(resp.read().decode("utf-8"))
     raw = "".join(b.get("text","") for b in data.get("content",[]) if b.get("type")=="text")
+    print(f"  📝 Claude raw (first 200): {repr(raw[:200])}")
     match = re.search(r'\[[\s\S]*\]', raw)
-    if not match:
-        raise ValueError("No JSON found in Claude response")
-    return json.loads(match.group(0))
+    if match:
+        return repair_and_parse(match.group(0))
+    return repair_and_parse(raw)
 
 # ─── HTTP SERVER ──────────────────────────────────────────────────────────────
 class Handler(BaseHTTPRequestHandler):
