@@ -196,38 +196,49 @@ def get_hebrew_transcript(video_id):
         return {"error": f"Could not fetch transcript: {err}"}
 
 # ─── CLAUDE ───────────────────────────────────────────────────────────────────
-CLAUDE_PROMPT_ADVANCED = """You are a Hebrew language teacher helping an advanced-intermediate learner.
+CLAUDE_PROMPT_ADVANCED = """Extract 12 Hebrew vocabulary words at B2 level from the text below.
 
-From the Hebrew text below, extract 12 words at B2/advanced-intermediate level — words that go beyond everyday Hebrew but appear in news and media. Skip very basic words and hyper-technical jargon.
+Rules:
+- B2 level only: beyond everyday Hebrew but found in news/media
+- Skip basic words and hyper-technical jargon
+- ONE short sentence per word (under 10 Hebrew words)
+- Output MUST start with [ and end with ]
+- NO text before or after the JSON array
+- NO markdown, NO explanation, NO preamble
 
-For each word provide ONE short, simple example sentence (under 10 words in Hebrew).
-
-Return ONLY a valid JSON array, no markdown, no explanation:
-[{"word":"מילה","translation":"english (1-4 words)","root":"א-ב-ג or null","partOfSpeech":"noun/verb/adjective/adverb","sentences":[{"hebrew":"משפט קצר.","english":"Short sentence."}]}]
+Output format (JSON array only):
+[{"word":"מילה","translation":"english","root":"x-x-x or null","partOfSpeech":"noun","sentences":[{"hebrew":"משפט.","english":"Sentence."}]}]
 
 Hebrew text:
 """
 
-CLAUDE_PROMPT_INTERMEDIATE = """You are a Hebrew language teacher helping an intermediate learner.
+CLAUDE_PROMPT_INTERMEDIATE = """Extract 12 Hebrew vocabulary words at B1 level from the text below.
 
-From the Hebrew text below, extract 12 words at B1/intermediate level — common everyday words that an intermediate learner would be building towards. These should be practical, frequently used words: common verbs, everyday nouns, basic adjectives. Avoid very basic words (A2 level) and avoid advanced/rare words.
+Rules:
+- B1 level only: practical everyday words (common verbs, nouns, adjectives)
+- Avoid A2 basics and avoid rare/advanced words
+- ONE short sentence per word (under 8 Hebrew words)
+- Output MUST start with [ and end with ]
+- NO text before or after the JSON array
+- NO markdown, NO explanation, NO preamble
 
-For each word provide ONE short, simple everyday sentence (under 8 words in Hebrew) that clearly shows how the word is used.
-
-Return ONLY a valid JSON array, no markdown, no explanation:
-[{"word":"מילה","translation":"english (1-4 words)","root":"א-ב-ג or null","partOfSpeech":"noun/verb/adjective/adverb","sentences":[{"hebrew":"משפט קצר.","english":"Short sentence."}]}]
+Output format (JSON array only):
+[{"word":"מילה","translation":"english","root":"x-x-x or null","partOfSpeech":"noun","sentences":[{"hebrew":"משפט.","english":"Sentence."}]}]
 
 Hebrew text:
 """
 
 CLAUDE_PROMPT = CLAUDE_PROMPT_ADVANCED  # default
 
-WORD_PROMPT = """You are a Hebrew language teacher.
+WORD_PROMPT = """For the Hebrew word provided, return its translation and one short example sentence.
 
-The user has provided a single Hebrew word. Generate ONE short, simple everyday example sentence (under 10 words) using this word. Return it in JSON array format.
+Rules:
+- Output MUST start with [ and end with ]
+- NO text before or after the JSON array
+- NO markdown, NO explanation
 
-Return ONLY a valid JSON array, no markdown, no explanation:
-[{"word":"המילה","translation":"english translation","root":"שורש or null","partOfSpeech":"noun/verb/adjective/adverb","sentences":[{"hebrew":"משפט קצר.","english":"Short sentence."}]}]
+Output format (JSON array only):
+[{"word":"המילה","translation":"english","root":"x-x-x or null","partOfSpeech":"noun","sentences":[{"hebrew":"משפט קצר.","english":"Short sentence."}]}]
 
 Hebrew word: 
 """
@@ -309,7 +320,7 @@ def call_claude(hebrew_text, level='advanced', exclude=''):
         prompt = prompt.replace('Hebrew text:', 'Do NOT include these already-shown words: ' + exclude + '\n\nHebrew text:')
     payload = json.dumps({
         "model": "claude-sonnet-4-5",
-        "max_tokens": 8000,
+        "max_tokens": 4096,
         "messages": [{"role": "user", "content": prompt + hebrew_text[:6000]}]
     }).encode("utf-8")
     req = urllib.request.Request(
