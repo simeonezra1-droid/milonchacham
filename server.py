@@ -282,6 +282,7 @@ def repair_and_parse(json_str):
         except Exception:
             pass
 
+    print(f"  ❌ Could not parse JSON. Raw response start: {repr(json_str[:300])}")
     raise ValueError("Could not parse the response. Please try again.")
 
 def call_claude_word(word, level='advanced'):
@@ -290,7 +291,7 @@ def call_claude_word(word, level='advanced'):
     level_note = "intermediate (B1) level" if level == 'intermediate' else "advanced-intermediate (B2) level"
     prompt = WORD_PROMPT.replace("Generate ONE short", f"This is a {level_note} word. Generate ONE short")
     payload = json.dumps({
-        "model": "claude-sonnet-4-5",
+        "model": "claude-haiku-4-5-20251001",
         "max_tokens": 500,
         "messages": [{"role": "user", "content": prompt + word}]
     }).encode("utf-8")
@@ -319,7 +320,7 @@ def call_claude(hebrew_text, level='advanced', exclude=''):
     if exclude:
         prompt = prompt.replace('Hebrew text:', 'Do NOT include these already-shown words: ' + exclude + '\n\nHebrew text:')
     payload = json.dumps({
-        "model": "claude-sonnet-4-5",
+        "model": "claude-haiku-4-5-20251001",
         "max_tokens": 4096,
         "messages": [{"role": "user", "content": prompt + hebrew_text[:6000]}]
     }).encode("utf-8")
@@ -453,6 +454,7 @@ class Handler(BaseHTTPRequestHandler):
                     words = call_claude(text, level, exclude)
                 self.send_json(200, {"words": words})
             except Exception as e:
+                print(f"  ❌ Error: {e}")
                 self.send_json(500, {"error": f"Claude API error: {e}"})
             return
 
