@@ -282,7 +282,7 @@ def repair_and_parse(json_str):
         except Exception:
             pass
 
-    print(f"  ❌ Could not parse JSON. Raw response start: {repr(json_str[:300])}")
+    print(f"  ❌ Raw response (first 500 chars): {repr(json_str[:500])}")
     raise ValueError("Could not parse the response. Please try again.")
 
 def call_claude_word(word, level='advanced'):
@@ -453,8 +453,14 @@ class Handler(BaseHTTPRequestHandler):
                 else:
                     words = call_claude(text, level, exclude)
                 self.send_json(200, {"words": words})
+            except urllib.error.HTTPError as e:
+                body = e.read().decode('utf-8', errors='replace')
+                print(f"  ❌ HTTP {e.code}: {body[:300]}")
+                self.send_json(500, {"error": f"Claude API HTTP {e.code}: {body[:200]}"})
             except Exception as e:
+                import traceback
                 print(f"  ❌ Error: {e}")
+                traceback.print_exc()
                 self.send_json(500, {"error": f"Claude API error: {e}"})
             return
 
