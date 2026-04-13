@@ -266,8 +266,8 @@
       <button class="hn-btn active" id="navAnalyze" onclick="switchPage('analyze')">🔍 Search</button>
       <button class="hn-btn" id="navLearned" onclick="switchPage('learned')">🎓 Learned <span class="hn-badge" id="learnedBadge">0</span></button>
       <div style="display:flex;background:var(--warm);border-radius:8px;padding:3px;border:1.5px solid var(--border);gap:2px;">
-        <button class="hn-btn active" id="headerLevelIntermediate" onclick="setLevel('intermediate')" style="border:none;background:transparent;padding:0.35rem 0.7rem;font-size:0.82rem;">📗 Intermediate</button>
-        <button class="hn-btn" id="headerLevelAdvanced" onclick="setLevel('advanced')" style="border:none;background:transparent;padding:0.35rem 0.7rem;font-size:0.82rem;">📘 Advanced</button>
+        <button class="hn-btn" id="headerLevelIntermediate" onclick="setLevel('intermediate')" style="border:none;background:transparent;padding:0.35rem 0.7rem;font-size:0.82rem;">📗 Intermediate</button>
+        <button class="hn-btn active" id="headerLevelAdvanced" onclick="setLevel('advanced')" style="border:none;background:transparent;padding:0.35rem 0.7rem;font-size:0.82rem;">📘 Advanced</button>
       </div>
     </nav>
   </div>
@@ -323,8 +323,10 @@
                 onfocus="showDropdown('articleDropdown')" onblur="hideDropdown('articleDropdown', 200)" oninput="filterDropdown('articleDropdown', this.value)" />
               <div class="search-dropdown" id="articleDropdown"></div>
             </div>
-            <button class="open-btn" id="openArticleBtn" onclick="openSource('article')" title="Open in new tab">↗ Open</button>
-            <button class="go-btn" id="analyzeArticleBtn" onclick="analyzeArticle()">Search 🔍</button>
+            <div style="display:flex;flex-direction:column;gap:0.35rem;flex-shrink:0;">
+              <button class="go-btn" id="analyzeArticleBtn" onclick="analyzeArticle()" style="padding:0.55rem 1rem;">Search 🔍</button>
+              <button class="open-btn" id="openArticleBtn" onclick="openSource('article')" style="padding:0.4rem 1rem;text-align:center;">↗ Open</button>
+            </div>
           </div>
           <p class="hint">Works with Haaretz, Ynet, Walla, Wikipedia, and most Hebrew news sites.</p>
         </div>
@@ -337,8 +339,10 @@
                 onfocus="showDropdown('ytDropdown')" onblur="hideDropdown('ytDropdown', 200)" />
               <div class="search-dropdown" id="ytDropdown"></div>
             </div>
-            <button class="open-btn" id="openYtBtn" onclick="openSource('youtube')" title="Open in new tab">↗ Open</button>
-            <button class="go-btn" id="analyzeYtBtn" onclick="analyzeYoutube()">Search 🔍</button>
+            <div style="display:flex;flex-direction:column;gap:0.35rem;flex-shrink:0;">
+              <button class="go-btn" id="analyzeYtBtn" onclick="analyzeYoutube()" style="padding:0.55rem 1rem;">Search 🔍</button>
+              <button class="open-btn" id="openYtBtn" onclick="openSource('youtube')" style="padding:0.4rem 1rem;text-align:center;">↗ Open</button>
+            </div>
           </div>
           <div class="yt-preview" id="ytPreview">
             <img class="yt-thumb" id="ytThumb" src="" alt="" />
@@ -768,7 +772,7 @@ function showTestResults(){
 }
 
 // ── LEVEL SELECTION ──────────────────────────────────────────────────────────
-let currentLevel = 'advanced'; // 'intermediate' or 'advanced'
+let currentLevel = 'advanced';
 
 function setLevel(level) {
   currentLevel = level;
@@ -1202,8 +1206,8 @@ function selectDropdownItem(url) {
     <span class="mob-badge" id="mobBadgeLearned" style="display:none">0</span>
   </button>
   <button class="mob-tab" id="mobNavLevel" onclick="toggleMobLevel()">
-    <span class="mob-icon" id="mobLevelIcon">📗</span>
-    <span class="mob-label" id="mobLevelLabel">Intermediate</span>
+    <span class="mob-icon" id="mobLevelIcon">📘</span>
+    <span class="mob-label" id="mobLevelLabel">Advanced</span>
   </button>
 
 </div>
