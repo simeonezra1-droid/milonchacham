@@ -216,6 +216,8 @@ Rules:
 - B2 level only: beyond everyday Hebrew but found in news/media
 - Skip basic words and hyper-technical jargon
 - ONE short sentence per word (under 10 Hebrew words)
+- IMPORTANT: Write a NEW, ORIGINAL simple everyday sentence — do NOT copy or quote from the source text
+- The sentence should use the word naturally in a simple, everyday context (not news/article context)
 - Output MUST start with [ and end with ]
 - NO text before or after the JSON array
 - NO markdown, NO explanation, NO preamble
@@ -232,6 +234,8 @@ Rules:
 - B1 level only: practical everyday words (common verbs, nouns, adjectives)
 - Avoid A2 basics and avoid rare/advanced words
 - ONE short sentence per word (under 8 Hebrew words)
+- IMPORTANT: Write a NEW, ORIGINAL simple everyday sentence — do NOT copy or quote from the source text
+- The sentence should be simple and conversational, showing the word in everyday use
 - Output MUST start with [ and end with ]
 - NO text before or after the JSON array
 - NO markdown, NO explanation, NO preamble
