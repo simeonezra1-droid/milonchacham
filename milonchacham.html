@@ -58,8 +58,10 @@
   .tab-panel{display:none;} .tab-panel.active{display:block;}
   .input-label{font-family:'Frank Ruhl Libre',serif;font-size:0.82rem;font-weight:700;color:#9a8060;text-transform:uppercase;letter-spacing:0.07em;margin-bottom:0.55rem;display:flex;align-items:center;gap:0.4rem;}
   .input-label::before{content:'';display:inline-block;width:3px;height:13px;background:var(--gold);border-radius:2px;}
-  .url-row{display:flex;gap:0.55rem;}
-  input[type="url"],input[type="text"]{flex:1;padding:0.68rem 0.9rem;border:1.5px solid var(--border);border-radius:9px;font-size:0.88rem;font-family:'Heebo',sans-serif;background:var(--warm);color:var(--ink);direction:ltr;outline:none;transition:border-color 0.18s,background 0.18s;}
+  .url-row{display:flex;gap:0.55rem;align-items:flex-start;}
+  .search-wrap{flex:1;min-width:0;position:relative;}
+  .search-wrap input{width:100%;}
+  input[type="url"],input[type="text"]{flex:1;min-width:0;padding:0.68rem 0.9rem;border:1.5px solid var(--border);border-radius:9px;font-size:0.88rem;font-family:'Heebo',sans-serif;background:var(--warm);color:var(--ink);direction:ltr;outline:none;transition:border-color 0.18s,background 0.18s;}
   input[type="text"].rtl-input{direction:rtl;}
   input:focus{border-color:var(--gold);background:white;}
   input::placeholder{color:#b0a080;}
@@ -1120,16 +1122,20 @@ function selectDropdownItem(url) {
       <div class="input-label">Article URL</div>
       <div class="url-row">
         <input type="url" id="mobArticleInput" placeholder="https://www.ynet.co.il/..." dir="ltr" style="flex:1;min-width:0;" />
-        <button class="open-btn" onclick="openSource('mob-article')" style="padding:0.68rem 0.6rem;font-size:1rem;">↗</button>
-        <button class="go-btn" id="mobAnalyzeArticleBtn" onclick="mobAnalyzeArticle()">Search</button>
+        <div style="display:flex;flex-direction:column;gap:0.3rem;flex-shrink:0;">
+          <button class="go-btn" id="mobAnalyzeArticleBtn" onclick="mobAnalyzeArticle()" style="padding:0.5rem 0.7rem;">🔍</button>
+          <button class="open-btn" onclick="openSource('mob-article')" style="padding:0.35rem 0.7rem;text-align:center;">↗</button>
+        </div>
       </div>
     </div>
     <div class="tab-panel" id="mobPanelYoutube">
       <div class="input-label">YouTube Link</div>
       <div class="url-row">
         <input type="text" id="mobYtInput" placeholder="https://www.youtube.com/watch?v=..." dir="ltr" oninput="onMobYtInput()" style="flex:1;min-width:0;" />
-        <button class="open-btn" onclick="openSource('mob-youtube')" style="padding:0.68rem 0.6rem;font-size:1rem;">↗</button>
-        <button class="go-btn" id="mobAnalyzeYtBtn" onclick="mobAnalyzeYoutube()">Search</button>
+        <div style="display:flex;flex-direction:column;gap:0.3rem;flex-shrink:0;">
+          <button class="go-btn" id="mobAnalyzeYtBtn" onclick="mobAnalyzeYoutube()" style="padding:0.5rem 0.7rem;">🔍</button>
+          <button class="open-btn" onclick="openSource('mob-youtube')" style="padding:0.35rem 0.7rem;text-align:center;">↗</button>
+        </div>
       </div>
       <div class="yt-preview" id="mobYtPreview">
         <img class="yt-thumb" id="mobYtThumb" src="" alt="" />
